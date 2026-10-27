@@ -1,30 +1,55 @@
-<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GL Family Financi</title><style>*{box-sizing:border-box}body{margin:0;background:#0b1738;color:#f8fafc;font:16px Arial,sans-serif}header{padding:25px 32px;background:#1e3a8a;border-bottom:3px solid #fbbf24}h1{margin:0}small{color:#bfcef0}main{max-width:1100px;margin:auto;padding:25px}nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}button{border:0;border-radius:9px;background:#1e3a8a;color:white;padding:12px;cursor:pointer}button.active,.goldbutton{background:#fbbf24;color:#152858;font-weight:bold}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:#152858;border:1px solid #385392;border-radius:16px;padding:22px}.amount{font-size:28px;font-weight:bold;margin-top:14px}.gold{color:#fbbf24}.magenta{color:#ec4899}.columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}h2{color:#fbbf24}.row{border-bottom:1px solid #385392;padding:14px 0;display:flex;justify-content:space-between}input{display:block;width:100%;padding:12px;margin:10px 0;background:#0b1738;color:white;border:1px solid #385392;border-radius:8px}#form{display:none}footer{margin:28px 0;color:#c4d0ec;font-size:13px}@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:550px){.grid,.columns{grid-template-columns:1fr}}
-/* Responsive mobile-first refinements */
-html{width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
-body{width:100%;min-width:0;overflow-x:hidden}
-main,.card,.grid,.columns{min-width:0}
-button,input{font:inherit;touch-action:manipulation}
-button{min-height:44px;white-space:normal}
-.row{gap:12px;align-items:center}
-.row span{min-width:0;overflow-wrap:anywhere}
-.row b{white-space:nowrap;font-variant-numeric:tabular-nums}
-@media(max-width:768px){
-header{padding:18px 16px}
-h1{font-size:clamp(22px,6vw,30px);line-height:1.18;letter-spacing:-.6px}
-header small{display:block;font-size:10px;margin-top:7px;line-height:1.4;letter-spacing:.8px}
-main{padding:16px 12px 28px}
-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 22px}
-nav button{padding:11px 6px;font-size:12px;line-height:1.25;min-height:48px}
-h2{font-size:20px;line-height:1.25;margin:0 0 16px}
-.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.card{padding:16px;border-radius:13px}
-.grid .card{min-height:118px}
-.amount{font-size:clamp(19px,5.7vw,28px);line-height:1.15;overflow-wrap:anywhere;margin-top:15px}
-.columns{grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px}
-.columns .card{width:100%}
-.goldbutton{width:100%;margin-top:13px}
-input{font-size:16px}
-footer{line-height:1.55}
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GL Family Financi</title><style>
+:root{--gold:#FBBF24;--navy:#1E3A8A;--pink:#EC4899;--bg:#0b1738;--card:#152858}
+*{box-sizing:border-box}html,body{min-width:0;margin:0;overflow-x:hidden}body{background:var(--bg);color:#f8fafc;font:15px system-ui,Arial,sans-serif}
+header{background:var(--navy);padding:20px 25px;border-bottom:3px solid var(--gold);display:flex;justify-content:space-between;align-items:center;gap:12px}
+header h1{font-size:25px;margin:0}small,.muted{color:#c5d2ec}main{max-width:1120px;margin:auto;padding:22px}h2{color:var(--gold);font-size:21px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{background:var(--card);border:1px solid #39548d;border-radius:14px;padding:19px;min-width:0}
+.value{font-size:clamp(21px,3vw,30px);font-weight:700;margin-top:10px}.gold{color:var(--gold)}.pink{color:var(--pink)}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:17px 0}button{border:0;border-radius:9px;background:var(--navy);color:white;padding:12px 14px;font:inherit;cursor:pointer;min-height:44px}
+button.primary,nav button.active{background:var(--gold);color:#132452;font-weight:700}button:disabled{opacity:.5;cursor:default}
+label{display:block;color:#cbd6ef;margin-top:12px;font-size:13px}input,select{display:block;width:100%;padding:12px;margin-top:6px;border:1px solid #4b679c;border-radius:9px;background:#091632;color:white;font:16px system-ui}
+form{max-width:540px}form button{margin-top:17px}.row{padding:15px 0;border-bottom:1px solid #37518a;display:flex;justify-content:space-between;gap:12px;align-items:center}.row span{overflow-wrap:anywhere;min-width:0}.row strong{white-space:nowrap}
+#app{display:none}#login{max-width:460px;margin:8vh auto}#msg{padding:12px 0;min-height:24px;color:var(--gold)}.columns{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:15px}.pill{font-size:11px;border:1px solid var(--pink);border-radius:30px;padding:8px}
+@media(max-width:700px){header{padding:16px}header h1{font-size:21px}main{padding:14px 12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.card{padding:14px}.columns{grid-template-columns:1fr}nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}nav button{font-size:12px;padding:9px 5px}.value{font-size:21px}#login{margin:35px auto}}
+@media(max-width:345px){.grid,nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style></head><body>
+<header><div><h1>GL Family Financi</h1><small>PROSPERIDADE PREMIUM · FINANÇAS FAMILIARES</small></div><span class="pill">ACESSO PRIVADO</span></header>
+<main><div id="login" class="card"><h2>Entrar na sua conta</h2><p class="muted">Use seu acesso autorizado do GL Family.</p><form id="loginform"><label>E-mail<input required type="email" id="email" autocomplete="username"></label><label>Senha<input required type="password" id="password" autocomplete="current-password"></label><button class="primary" type="submit">Entrar</button></form><p class="muted">A criação de usuários é feita pelo administrador. Não há cadastro público.</p></div>
+<div id="app"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><small id="user"></small><button id="logout">Sair da conta</button></div>
+<nav><button class="active" data-section="dashboard">Resumo</button><button data-section="accounts">Contas</button><button data-section="entries">Lançamentos</button></nav>
+<section id="dashboard"><h2>Visão geral</h2><div class="grid"><div class="card"><small>Receitas pagas</small><div class="value" id="income">R$ 0,00</div></div><div class="card"><small>Despesas pagas</small><div class="value pink" id="expenses">R$ 0,00</div></div><div class="card"><small>Resultado realizado</small><div class="value gold" id="balance">R$ 0,00</div></div></div>
+<div class="columns"><div class="card"><h2>Últimos lançamentos</h2><div id="recent">Nenhum lançamento.</div></div><div class="card"><h2>Contas a vencer</h2><div class="value gold" id="pending">R$ 0,00</div><p class="muted">Total de despesas planejadas ainda não pagas.</p></div></div></section>
+<section id="accounts" hidden><h2>Contas bancárias</h2><div class="columns"><div class="card"><h3>Cadastrar conta</h3><form id="accountform"><label>Nome<input id="accountname" maxlength="120" placeholder="Ex.: Conta principal" required></label><label>Tipo<select id="accountkind"><option value="checking">Corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro</option><option value="investment">Investimento</option></select></label><label>Saldo inicial<input id="opening" type="number" step="0.01" value="0" required></label><button class="primary">Salvar conta</button></form></div><div class="card"><h3>Minhas contas</h3><div id="accountslist">Nenhuma conta cadastrada.</div></div></div></section>
+<section id="entries" hidden><h2>Lançamentos</h2><div class="columns"><div class="card"><h3>Novo lançamento</h3><form id="entryform"><label>Descrição<input id="description" maxlength="250" required></label><label>Tipo<select id="kind"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Valor<input id="amount" type="number" min="0.01" step="0.01" required></label><label>Conta<select id="accountselect" required></select></label><label>Vencimento<input id="date" type="date" required></label><label>Situação<select id="status"><option value="planned">Planejado / a pagar</option><option value="paid">Pago / recebido</option></select></label><button class="primary">Salvar lançamento</button></form></div><div class="card"><h3>Histórico</h3><div id="entrieslist">Nenhum lançamento.</div></div></div></section>
+</div><div id="msg" role="status" aria-live="polite"></div></main>
+<script type="module">
+import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+const supabase=createClient('https://touqchuigiibfnzaqqwo.supabase.co','sb_publishable_nhTL2Vq-ykAttPCR7lMJGw_vZHSZ2tz');
+const $=id=>document.getElementById(id),money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+let user=null,accounts=[],entries=[];
+function say(s){$('msg').textContent=s}
+function formatError(e){return e?.message||'Erro inesperado'}
+function row(label,value){const d=document.createElement('div');d.className='row';const a=document.createElement('span');a.textContent=label;const b=document.createElement('strong');b.textContent=value;d.append(a,b);return d}
+function render(){
+$('accountslist').replaceChildren(...accounts.map(a=>row(a.name,money(a.opening_balance))));
+$('accountselect').replaceChildren(...accounts.map(a=>{let o=document.createElement('option');o.value=a.id;o.textContent=a.name;return o}));
+$('entryform').querySelector('button').disabled=!accounts.length;
+const entryRows=entries.map(e=>row((e.kind==='income'?'Receita: ':'Despesa: ')+e.description+' · '+e.due_date+' · '+(e.status==='paid'?'Pago':'Planejado'),money(e.amount)));
+$('entrieslist').replaceChildren(...entryRows);$('recent').replaceChildren(...entryRows.slice(0,6));
+if(!entries.length){$('entrieslist').textContent='Nenhum lançamento.';$('recent').textContent='Nenhum lançamento.'}
+const income=entries.filter(e=>e.kind==='income'&&e.status==='paid').reduce((s,e)=>s+Number(e.amount),0);
+const expense=entries.filter(e=>e.kind==='expense'&&e.status==='paid').reduce((s,e)=>s+Number(e.amount),0);
+$('income').textContent=money(income);$('expenses').textContent=money(expense);$('balance').textContent=money(income-expense);
+$('pending').textContent=money(entries.filter(e=>e.kind==='expense'&&e.status==='planned').reduce((s,e)=>s+Number(e.amount),0));
 }
-@media(max-width:350px){nav{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{gap:8px}.grid .card{padding:12px}.amount{font-size:19px}}
-</style><header><h1>GL Family Financi</h1><small>PROSPERIDADE PREMIUM | PREVIA DEMONSTRATIVA</small></header><main><nav><button class="active" onclick="page(this,'home')">Visao geral</button><button onclick="page(this,'entries')">Lancamentos</button><button onclick="page(this,'bills')">Contas a pagar</button><button onclick="page(this,'cards')">Cartoes</button><button onclick="page(this,'ai')">Assistente IA</button></nav><div id="home"><h2>Painel financeiro familiar</h2><div class="grid"><div class="card"><small>Receitas</small><div class="amount">R$ 18.500</div></div><div class="card"><small>Despesas</small><div class="amount">R$ 11.280</div></div><div class="card"><small>Saldo previsto</small><div class="amount gold">R$ 7.220</div></div><div class="card"><small>Contas a vencer</small><div class="amount magenta">R$ 3.650</div></div></div><div class="columns"><div class="card"><h2>Lancamentos demonstrativos</h2><div id="rows"><div class="row"><span>Supermercado</span><b>R$ 1.260</b></div><div class="row"><span>Energia</span><b>R$ 380</b></div></div><button class="goldbutton" onclick="document.getElementById('form').style.display='block'">+ Lancamento teste</button><div id="form"><input id="desc" placeholder="Descricao"><input id="val" type="number" min="0.01" step="0.01" placeholder="Valor"><button onclick="add()">Salvar no teste</button></div></div><div class="card"><h2>Planejamento familiar</h2><p>Contas, despesas, cartoes e indicadores em um lugar.</p><p>Integracoes e banco de dados ainda em desenvolvimento.</p></div></div></div><div class="card" id="other" style="display:none"><h2 id="sectiontitle"></h2><p>Modulo em desenvolvimento.</p></div><footer>ATENCAO: dados ficticios. Esta versao nao guarda lancamentos e nao possui autenticacao. Nao insira dados reais.</footer></main><script>function page(b,p){document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('home').style.display=p==='home'?'block':'none';document.getElementById('other').style.display=p==='home'?'none':'block';document.getElementById('sectiontitle').textContent=b.textContent}function add(){let d=document.getElementById('desc').value.trim(),v=Number(document.getElementById('val').value);if(!d||!Number.isFinite(v)||v<=0)return alert('Informe descricao e valor');let r=document.createElement('div'),a=document.createElement('span'),b=document.createElement('b');r.className='row';a.textContent=d;b.textContent=v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});r.append(a,b);document.getElementById('rows').append(r);document.getElementById('form').style.display='none'}</script></html>
+async function refresh(){if(!user)return;let [a,t]=await Promise.all([supabase.from('financial_accounts').select('id,name,kind,opening_balance').order('created_at'),supabase.from('transactions').select('id,description,amount,kind,status,due_date').order('due_date',{ascending:false}).limit(200)]);if(a.error||t.error){say(formatError(a.error||t.error));return}accounts=a.data;entries=t.data;render()}
+async function setUser(u){user=u;$('login').style.display=u?'none':'block';$('app').style.display=u?'block':'none';if(u){$('user').textContent=u.email;await refresh()}else{accounts=[];entries=[];say('')}}
+$('loginform').addEventListener('submit',async e=>{e.preventDefault();say('Autenticando...');const {error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error){say(formatError(error));return}say('')});
+$('logout').addEventListener('click',async()=>{const {error}=await supabase.auth.signOut();if(error)say(formatError(error))});
+$('accountform').addEventListener('submit',async e=>{e.preventDefault();if(!user)return;const name=$('accountname').value.trim();const val=Number($('opening').value);if(!name||!Number.isFinite(val))return say('Preencha os dados da conta');let {error}=await supabase.from('financial_accounts').insert({name,kind:$('accountkind').value,opening_balance:val});if(error)return say(formatError(error));e.target.reset();$('opening').value='0';say('Conta salva');await refresh()});
+$('entryform').addEventListener('submit',async e=>{e.preventDefault();if(!user||!accounts.length)return;const amount=Number($('amount').value);if(!(amount>0))return say('O valor deve ser maior que zero');const status=$('status').value;const {error}=await supabase.from('transactions').insert({account_id:$('accountselect').value,description:$('description').value.trim(),amount,kind:$('kind').value,due_date:$('date').value,status,paid_at:status==='paid'?new Date().toISOString():null});if(error)return say(formatError(error));e.target.reset();$('date').value=new Date().toLocaleDateString('en-CA');say('Lançamento salvo');await refresh()});
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');for(const id of ['dashboard','accounts','entries'])$(id).hidden=id!==b.dataset.section;say('')}));
+$('date').value=new Date().toISOString().slice(0,10);
+const {data:{session},error}=await supabase.auth.getSession();if(error)say(formatError(error));await setUser(session?.user||null);
+supabase.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')setUser(session?.user||null)});
+</script></body></html>

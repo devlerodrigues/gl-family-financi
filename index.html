@@ -72,6 +72,10 @@ html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}
 }
 
 .categoryTap{width:100%;display:block;background:transparent;color:inherit;padding:0;border:0;border-radius:10px;min-height:0;text-align:left;font:inherit;cursor:pointer}.categoryTap:focus-visible{outline:2px solid var(--gold);outline-offset:4px}.categoryTap .line{align-items:center}.categoryTap .line strong{color:var(--gold)}.categoryTap .line span:after{content:'  ›';color:var(--gold);font-weight:800}.categoryDetailRow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:13px 0;border-bottom:1px solid #304b83;align-items:start}.categoryDetailRow strong{color:var(--gold);white-space:nowrap}.categoryDetailRow small{display:block;color:var(--muted);margin-top:5px;font-size:12px}.categoryDetailRow span{overflow-wrap:anywhere}.categoryTotal{font-size:26px;font-weight:800;color:var(--gold);margin:8px 0 14px}.categoryClose{width:100%;margin-top:16px}.categoryHint{font-size:12px;color:var(--muted)}
+
+/* Keep installment payment action readable on narrow phones */
+.installmentActionRow{display:flex!important;align-items:center!important;justify-content:space-between;gap:12px;min-width:0}.installmentActionRow>span{min-width:0;flex:1;overflow-wrap:break-word}.installmentPayButton{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:90px;min-height:44px;padding:11px 16px;white-space:nowrap;word-break:normal;overflow-wrap:normal;line-height:1.2;font-size:14px}
+@media(max-width:420px){.installmentActionRow{gap:8px}.installmentPayButton{min-width:80px;padding:10px 12px}}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><button id="logout" hidden>Sair</button></header>
 <div id="categoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="categoryDetailTitle"><h2 id="categoryDetailTitle">Detalhamento da categoria</h2><p id="categoryDetailPeriod"></p><div id="categoryDetailTotal" class="categoryTotal"></div><div id="categoryDetailList"></div><button id="categoryDetailClose" class="categoryClose" type="button">Fechar</button></div></div>
@@ -245,11 +249,11 @@ el('payForm').addEventListener('submit',async e=>{
  }catch(err){notify('Não foi possível registrar: '+err.message)}finally{button.disabled=false}
 });
 function makeInstallmentLine(x){
- const box=document.createElement('div');box.className='line';box.style.alignItems='center';
+ const box=document.createElement('div');box.className='line installmentActionRow';box.style.alignItems='center';
  const info=document.createElement('span');const installment=x.installment_number&&x.installment_total?' ('+x.installment_number+'/'+x.installment_total+')':'';
  info.textContent=x.description+installment+' · vence '+x.due_date+' · '+money(x.status==='paid'?(x.amount_paid??x.installment_amount_paid??x.amount):x.amount)+(x.status==='paid'?' · Paga':' · Prevista')+(x.status==='paid'&&Number(x.interest_paid??x.installment_interest_paid)>0?' · Juros '+money(x.interest_paid??x.installment_interest_paid):'');
  box.append(info);
- if(x.status!=='paid'){const button=document.createElement('button');button.textContent='Quitar';button.onclick=()=>markInstallmentPaid(x);box.append(button)}
+ if(x.status!=='paid'){const button=document.createElement('button');button.textContent='Quitar';button.className='installmentPayButton';button.onclick=()=>markInstallmentPaid(x);box.append(button)}
  return box;
 }
 function drawDueInstallments(){

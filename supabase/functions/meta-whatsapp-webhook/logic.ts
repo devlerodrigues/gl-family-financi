@@ -24,9 +24,10 @@ function parseDate(x:string):string|null{
  if(/\bontem\b/.test(n))return shift(base,-1);
  if(/\bhoje\b/.test(n))return base;
  if(/\bamanha\b/.test(n))return shift(base,1);
+ const valid=(iso:string)=>{const d=new Date(iso+'T12:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===iso?iso:null};
  const m=x.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/);
- if(m){const year=m[3].length===2?'20'+m[3]:m[3];const iso=year+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return new Date(iso+'T12:00:00Z').toISOString().slice(0,10)===iso?iso:null}
- const iso=x.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];return iso&&new Date(iso+'T12:00:00Z').toISOString().slice(0,10)===iso?iso:null;
+ if(m){const year=m[3].length===2?'20'+m[3]:m[3];const iso=year+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return valid(iso)}
+ const iso=x.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];return iso?valid(iso):null;
 }
 function instalments(x:string):number|null{
  const n=norm(x);if(/^(nao|n|avista|a vista|uma|unica|1|sem parcelas|sem parcelar)$/.test(n))return 1;

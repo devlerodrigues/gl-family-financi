@@ -73,7 +73,7 @@ function markInstallmentPaid(x){
  el('payDetails').textContent='Parcela '+(x.installment_number||'')+'/'+(x.installment_total||'')+' · Vencimento '+x.due_date+' · Valor original '+money(x.amount);
  el('payAmount').value=Number(x.amount).toFixed(2);
  const group=installmentBucket(x);
- el('payCategory').value=x.category_label||(group==='Carro'?'Veículo':group==='Casa'?'Moradia':group==='Compras da casa'?'Contas da casa':'Compras');
+ el('payCategory').value=x.category_label||(group==='Carro'?'Veículo':group==='Casa'?'Moradia':group==='Panela Royal Prestige'?'Contas da casa':'Compras');
  updatePayInterest();el('payOverlay').hidden=false;el('payAmount').focus();
 }
 function updatePayInterest(){if(!activePayment)return;el('payInterest').textContent=money(Math.max(0,Number(el('payAmount').value||0)-Number(activePayment.amount)))}
@@ -117,7 +117,7 @@ function installmentBucket(x){
  if(key.includes('nubank')||name.startsWith('nubank'))return 'Cartão Nubank';
  if(key.includes('caixa-casa')||name.includes('casa - caixa')||name.includes('habitacional'))return 'Casa';
  if(key.includes('byd-king')||name.includes('financiamento byd')||name.includes('veículo'))return 'Carro';
- if(key.includes('royal-prestige')||name.includes('royal prestige'))return 'Compras da casa';
+ if(key.includes('royal-prestige')||name.includes('royal prestige'))return 'Panela Royal Prestige';
  return 'Outros parcelamentos';
 }
 function drawInstallments(){
@@ -128,7 +128,7 @@ function drawInstallments(){
  if(!buckets.size){target.textContent='Nenhuma parcela encontrada.';return}
  const month=localToday().slice(0,7);
  const grid=document.createElement('div');grid.className='installmentGrid';
- for(const name of ['Casa','Carro','Compras da casa','Cartão Nubank','Cartão Santander','Outras compras','Outros parcelamentos']){
+ for(const name of ['Casa','Carro','Panela Royal Prestige','Cartão Nubank','Cartão Santander','Outras compras','Outros parcelamentos']){
  const items=buckets.get(name);if(!items?.length)continue;
  const due=items.filter(x=>x.status==='planned'&&x.due_date.startsWith(month));
  const overdue=items.filter(x=>x.status==='planned'&&x.due_date<month+'-01');

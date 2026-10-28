@@ -18,15 +18,38 @@ async function sendWhatsApp(phoneId:string,to:string,body:string){
  const access=token();
  if(!access){console.warn('family_wa: outgoing WhatsApp token is not configured');return false}
  if(!/^[0-9]{5,32}$/.test(phoneId)||!/^[0-9]{8,18}$/.test(to))return false;
- const version=Deno.env.get('META_GRAPH_VERSION')||'v24.0';
- try{
-  const response=await fetch('https://graph.facebook.com/'+version+'/'+phoneId+'/messages',{
-   method:'POST',headers:{authorization:'Bearer '+access,'content-type':'application/json'},
-   body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to,type:'text',text:{preview_url:false,body:body.slice(0,3900)}})
-  });
-  if(!response.ok){const details=await response.json().catch(()=>({}));console.warn('family_wa: send failed',JSON.stringify({status:response.status,code:details?.error?.code,subcode:details?.error?.error_subcode}));return false}
-  return true;
- }catch(error){console.error('family_wa: outgoing request failed',String(error).slice(0,160));return false}
+ const version=Deno.env.get('META_GRAPH_VERSION')||'v26.0';
+ const url='https://graph.facebook.com/'+version+'/'+phoneId+'/messages';
+ const attempt=async(recipient:string):Promise<{success:boolean,errorCode:number|null}>=>{
+  try{
+   const response=await fetch(url,{
+    method:'POST',headers:{authorization:'Bearer '+access,'content-type':'application/json'},
+    body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:recipient,type:'text',text:{preview_url:false,body:body.slice(0,3900)}})
+   });
+   if(response.ok)return {success:true,errorCode:null};
+   const details=await response.json().catch(()=>({}));
+   const errorCode=typeof details?.error?.code==='number'?details.error.code:null;
+   console.warn('family_wa: send rejected',JSON.stringify({status:response.status,code:errorCode,subcode:details?.error?.error_subcode??null,format:recipient===to?'webhook_wa_id':'br_ninth_digit'}));
+   return {success:false,errorCode};
+  }catch(error){
+   console.error('family_wa: outgoing request failed',String(error).slice(0,160));
+   return {success:false,errorCode:null};
+  }
+ };
+ const first=await attempt(to);
+ if(first.success)return true;
+ // Brazil: some inbound WhatsApp IDs omit the mobile ninth digit, but Meta's
+ // test-recipient allowlist contains the full E.164 number with that digit.
+ // Retry only on 131030 and only for a 12-digit BR number, never for arbitrary IDs.
+ if(first.errorCode===131030&&/^55\d{10}$/.test(to)){
+  const withNinthDigit=to.slice(0,4)+'9'+to.slice(4);
+  const retry=await attempt(withNinthDigit);
+  if(retry.success){
+   console.info('family_wa: br_ninth_digit_fallback_succeeded');
+   return true;
+  }
+ }
+ return false;
 }
 function adminClient(){
  const url=Deno.env.get('SUPABASE_URL');

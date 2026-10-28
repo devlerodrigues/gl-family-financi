@@ -35,6 +35,54 @@ function adminClient(){
  if(!url||!key)throw Error('Supabase service credentials are unavailable');
  return createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 }
+
+const diagJson=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
+async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
+ try{
+  const jwt=(req.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
+  if(!jwt||jwt.length<40)return diagJson({error:'Faça login no GL Family antes de verificar.'},401);
+  const db=adminClient();
+  const {data:identity,error:authError}=await db.auth.getUser(jwt);
+  if(authError||!identity.user)return diagJson({error:'Sessão inválida. Entre novamente no aplicativo.'},401);
+  const {data:member,error:memberError}=await db.from('family_user_profiles').select('id,role').eq('id',identity.user.id).maybeSingle();
+  if(memberError||!member)return diagJson({error:'Acesso não autorizado.'},403);
+  if(subscribe&&member.role!=='admin')return diagJson({error:'Apenas um administrador pode atualizar a assinatura da Meta.'},403);
+  const {data:linkCode}=await db.from('family_wa_link_codes').select('expires_at,used_at').eq('user_id',member.id).maybeSingle();
+  const {data:link}=await db.from('family_wa_links').select('wa_id').eq('user_id',member.id).maybeSingle();
+  const access=token();
+  const appSecret=!!Deno.env.get('META_APP_SECRET');
+  const version=Deno.env.get('META_GRAPH_VERSION')||'v26.0';
+  const waba=Deno.env.get('META_WABA_ID')||'2551347102028900';
+  const graph='https://graph.facebook.com/'+version+'/'+waba+'/subscribed_apps';
+  let tokenValid=false,subscribed:null|boolean=null,graphStatus:null|number=null,graphCode:null|number=null;
+  if(access){
+   try{
+    const response=await fetch(graph,{method:subscribe?'POST':'GET',headers:{authorization:'Bearer '+access}});
+    graphStatus=response.status;
+    const json=await response.json().catch(()=>({}));
+    graphCode=typeof json?.error?.code==='number'?json.error.code:null;
+    if(response.ok){
+     tokenValid=true;
+     if(subscribe){subscribed=json?.success===true||json?.success==='true';}
+     else{const apps=Array.isArray(json?.data)?json.data:[];subscribed=apps.some((a:any)=>String(a.id)==='1134075289093083');}
+    }
+   }catch(error){console.warn('family_wa: connectivity diagnostic unavailable')}
+  }
+  const status={
+   webhook_validated:appSecret,
+   outgoing_token_configured:!!access,
+   meta_api_accepted:tokenValid,
+   subscription_confirmed:subscribed,
+   meta_api_http_status:graphStatus,
+   meta_error_code:graphCode,
+   link_code_active:!!linkCode&&!linkCode.used_at&&Date.parse(linkCode.expires_at)>Date.now(),
+   whatsapp_linked:!!link,
+  };
+  console.info('family_wa: authorized_health_check',JSON.stringify({meta_api_http_status:graphStatus,meta_error_code:graphCode,subscribed,link_active:status.link_code_active,requested_subscription:subscribe}));
+  return diagJson(status);
+ }catch(error){console.error('family_wa: diagnostic failure',String(error).slice(0,120));return diagJson({error:'Não foi possível consultar a integração agora.'},500)}
+}
+
 async function handleOne(db:any,message:any,phoneId:string){
  const msgId=String(message?.id||'').slice(0,160),wa=String(message?.from||'');
  if(!msgId||!/^[0-9]{8,18}$/.test(wa))return true;
@@ -75,11 +123,13 @@ async function handleOne(db:any,message:any,phoneId:string){
 Deno.serve(async(req:Request)=>{
  const secret=Deno.env.get('META_APP_SECRET');
  const verify=Deno.env.get('META_VERIFY_TOKEN')||'glfamily-meta-verify-2026-b83f5c9a2e71';
+ const u=new URL(req.url);
  if(req.method==='GET'){
-  const u=new URL(req.url);
   if(u.searchParams.get('hub.mode')==='subscribe'&&u.searchParams.get('hub.verify_token')===verify)return plain(u.searchParams.get('hub.challenge')||'');
+  if(u.searchParams.get('diagnostic')==='status')return metaDiagnostic(req,false);
   return plain('Forbidden',403);
  }
+ if(req.method==='POST'&&u.searchParams.get('diagnostic')==='subscribe')return metaDiagnostic(req,true);
  if(req.method!=='POST')return plain('Method not allowed',405);
  if(!secret)return plain('Webhook not configured',503);
  const raw=await req.text();

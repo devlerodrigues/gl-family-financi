@@ -84,7 +84,7 @@ el('readReceipt').addEventListener('click',async()=>{
   if(data?.error)throw new Error(data.error);
   if(data?.description)el('description').value=data.description;
   if(data?.amount)el('amount').value=data.amount;
-  if(data?.date&&data.date<=localToday())el('date').value=data.date;
+  
   if(data?.category)el('category').value=data.category;
   if(data?.payment_method)el('payment').value=data.payment_method;
   notify('Foto analisada. Confira todos os campos e clique em Salvar gasto.');
@@ -107,7 +107,7 @@ el('logout').addEventListener('click',async()=>{const {error}=await db.auth.sign
 el('expenseForm').addEventListener('submit',async e=>{
  e.preventDefault();const amount=Number(el('amount').value);
  if(!Number.isFinite(amount)||amount<=0||!registrationAccountId||!el('payment').value)return notify('Confira o valor e a forma de pagamento.');
- const button=el('save');button.disabled=true;notify('Salvando...');
+ el('date').value=localToday();const button=el('save');button.disabled=true;notify('Salvando...');
  try{const {error}=await db.from('transactions').insert({account_id:registrationAccountId,payment_method:el('payment').value,description:el('description').value.trim(),amount,category_label:el('category').value,kind:'expense',status:'paid',due_date:el('date').value,paid_at:new Date().toISOString()});if(error){notify('Não foi possível salvar: '+error.message);return}e.target.reset();el('date').value=localToday();notify('Gasto registrado com sucesso.');await loadDashboard();switchView('dashboard')}catch(err){notify(err.message||'Falha ao salvar')}finally{button.disabled=false}
 });
 db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showUser(null)});

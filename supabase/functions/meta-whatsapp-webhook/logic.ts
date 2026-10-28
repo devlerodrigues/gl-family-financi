@@ -149,6 +149,7 @@ export async function processFamilyText(db:any,wa:string,text:string):Promise<st
   const {error:linkErr}=await db.from('family_wa_links').upsert({user_id:c.user_id,wa_id:wa,verified_at:new Date().toISOString()},{onConflict:'user_id'});
   if(linkErr)return linkErr.code==='23505'?'Este WhatsApp já está vinculado a outro usuário. Desvincule no GL Family antes de tentar novamente.':'Não foi possível vincular sua conta.';
   await db.from('family_wa_link_codes').update({used_at:new Date().toISOString()}).eq('user_id',c.user_id);
+  await db.from('family_wa_drafts').update({status:'cancelled',updated_at:new Date().toISOString()}).eq('user_id',c.user_id).in('status',['collecting','confirming']);
   return 'Seu WhatsApp foi vinculado com segurança ao GL Family! Agora envie uma despesa, por exemplo: Gastei 50 reais no mercado. Vou perguntar todos os dados antes de salvar.';
  }
  const {data:link,error:linkError}=await db.from('family_wa_links').select('user_id').eq('wa_id',wa).maybeSingle();

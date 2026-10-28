@@ -46,7 +46,7 @@ async function sendWhatsApp(phoneId:string,to:string,body:string):Promise<SendRe
  if(first.success)return first;
  // Some Brazilian inbound WA IDs omit the mobile ninth digit. Retry only when
  // Meta says the address is not on the test-recipient allowlist (131030).
- if(first.errorCode===131030&&/^55\\d{10}$/.test(to)){
+ if(first.errorCode===131030&&/^55\d{10}$/.test(to)){
   const recipient=to.slice(0,4)+'9'+to.slice(4);
   const retry=await attempt(recipient,'br_ninth_digit');
   if(retry.success)console.info('family_wa: br_ninth_digit_fallback_succeeded');

@@ -54,18 +54,33 @@ async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
   const appSecret=!!Deno.env.get('META_APP_SECRET');
   const version=Deno.env.get('META_GRAPH_VERSION')||'v26.0';
   const waba=Deno.env.get('META_WABA_ID')||'2551347102028900';
+  const metaAppId=Deno.env.get('META_APP_ID')||'1134075289093083';
   const graph='https://graph.facebook.com/'+version+'/'+waba+'/subscribed_apps';
   let tokenValid=false,subscribed:null|boolean=null,graphStatus:null|number=null,graphCode:null|number=null;
+  let subscriptionCount:null|number=null,hasAlternateCallback=false,requestedSubscriptionSuccess=false;
   if(access){
    try{
-    const response=await fetch(graph,{method:subscribe?'POST':'GET',headers:{authorization:'Bearer '+access}});
-    graphStatus=response.status;
-    const json=await response.json().catch(()=>({}));
-    graphCode=typeof json?.error?.code==='number'?json.error.code:null;
-    if(response.ok){
-     tokenValid=true;
-     if(subscribe){subscribed=json?.success===true||json?.success==='true';}
-     else{const apps=Array.isArray(json?.data)?json.data:[];subscribed=apps.some((a:any)=>String(a.id)==='1134075289093083');}
+    if(subscribe){
+     const postResponse=await fetch(graph,{method:'POST',headers:{authorization:'Bearer '+access}});
+     graphStatus=postResponse.status;
+     const postJson=await postResponse.json().catch(()=>({}));
+     graphCode=typeof postJson?.error?.code==='number'?postJson.error.code:null;
+     requestedSubscriptionSuccess=postResponse.ok&&(postJson?.success===true||postJson?.success==='true');
+     if(!postResponse.ok)console.warn('family_wa: subscription rejected',JSON.stringify({http_status:graphStatus,meta_error_code:graphCode}));
+    }
+    if(!subscribe||requestedSubscriptionSuccess){
+     const getResponse=await fetch(graph,{method:'GET',headers:{authorization:'Bearer '+access}});
+     graphStatus=getResponse.status;
+     const getJson=await getResponse.json().catch(()=>({}));
+     graphCode=typeof getJson?.error?.code==='number'?getJson.error.code:null;
+     if(getResponse.ok){
+      tokenValid=true;
+      const apps=Array.isArray(getJson?.data)?getJson.data:[];
+      subscriptionCount=apps.length;
+      const ownApp=apps.find((a:any)=>String(a?.whatsapp_business_api_data?.id ?? a?.id ?? '')===metaAppId);
+      subscribed=!!ownApp;
+      hasAlternateCallback=!!ownApp?.override_callback_uri;
+     }
     }
    }catch(error){console.warn('family_wa: connectivity diagnostic unavailable')}
   }
@@ -74,6 +89,9 @@ async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
    outgoing_token_configured:!!access,
    meta_api_accepted:tokenValid,
    subscription_confirmed:subscribed,
+   subscription_count:subscriptionCount,
+   callback_override_configured:hasAlternateCallback,
+   subscription_request_accepted:subscribe?requestedSubscriptionSuccess:null,
    meta_api_http_status:graphStatus,
    meta_error_code:graphCode,
    link_code_active:!!linkCode&&!linkCode.used_at&&Date.parse(linkCode.expires_at)>Date.now(),

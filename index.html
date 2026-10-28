@@ -11,9 +11,9 @@ button{border:0;border-radius:10px;padding:14px 16px;cursor:pointer;background:v
 button:disabled{opacity:.55;cursor:default}.submit{width:100%;margin-top:24px}#logout{background:transparent;border:1px solid #8099ca;color:white;font-size:13px;padding:8px 12px;min-height:38px}
 .gridFilters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 15px}@media(max-width:560px){.gridFilters{grid-template-columns:1fr}}.installmentGrid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:16px}.installmentBox{border:1px solid #39548d;background:#10214c;border-radius:14px;overflow:hidden}.installmentHead{cursor:pointer;list-style:none;padding:18px;display:grid;gap:7px}.installmentHead::-webkit-details-marker{display:none}.installmentValue{font-size:25px;color:var(--gold)}.installmentHead small{color:var(--muted)}.installmentInner{padding:8px 15px 16px;border-top:1px solid #39548d}.installmentInner h4{margin:18px 0 5px;color:var(--gold)}@media(max-width:740px){.installmentGrid{grid-template-columns:1fr}}#app{display:none}.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px}.sidebar{background:#10214c;padding:14px;border:1px solid #39548d;border-radius:16px;height:max-content;position:sticky;top:18px}.navbtn{display:block;width:100%;text-align:left;background:transparent;color:white;margin:5px 0}.navbtn.active{background:var(--gold);color:#172451}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}.metric{background:#162e62;border-radius:12px;padding:18px;border:1px solid #36518c}.metric strong{display:block;font-size:25px;margin-top:8px;color:var(--gold)}.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.line{padding:11px 0;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #304b83}.line span{min-width:0;overflow-wrap:anywhere}.bar{height:7px;border-radius:6px;background:#283d6c;margin-top:7px;overflow:hidden}.fill{height:100%;background:var(--gold);border-radius:6px}.sec-title{margin:0 0 10px}.simple-select{max-width:200px}.subtle{font-size:13px;color:var(--muted)}@media(max-width:740px){.layout{grid-template-columns:1fr}.sidebar{display:flex;position:static;gap:8px;padding:8px}.navbtn{flex:1;text-align:center;font-size:14px}.split{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.metric strong{font-size:21px}}#login{margin-top:8vh}#notice{min-height:30px;margin:15px 0;color:var(--gold)}.foot{font-size:12px;color:var(--muted)}
 @media(max-width:560px){header{padding:15px}h1{font-size:19px}main{margin:15px auto}.card{padding:20px}}
-</style></head><body>
+ .payOverlay{position:fixed;inset:0;background:#020817d9;display:grid;place-items:center;z-index:100;padding:16px}.payOverlay[hidden]{display:none}.payModal{width:min(100%,520px);max-height:92vh;overflow:auto;background:#152858;border:1px solid #536e9d;border-radius:18px;padding:24px;box-shadow:0 20px 50px #0008}.payActions{display:flex;gap:12px;margin-top:20px}.payActions button{flex:1}.payDetails{background:#0d2048;border-radius:12px;padding:12px;margin-top:12px;color:#c5d2ec} </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><button id="logout" hidden>Sair</button></header>
-<main>
+<div id="payOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="payTitle"><h2 id="payTitle">Quitar parcela</h2><p id="payDescription"></p><div id="payDetails" class="payDetails"></div><form id="payForm"><label>Valor efetivamente pago (R$)<input id="payAmount" type="number" step="0.01" min="0.01" required></label><label>Categoria<select id="payCategory" required><option value="">Selecione</option><option>Supermercado</option><option>Alimentação</option><option>Moradia</option><option>Contas da casa</option><option>Transporte</option><option>Veículo</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Assinaturas</option><option>Compras</option><option>Outros</option></select></label><div class="payDetails">Juros e encargos: <strong id="payInterest">R$ 0,00</strong><p class="foot">A quitação entra no dashboard e no histórico como gasto realizado hoje.</p></div><div class="payActions"><button type="button" id="cancelPay" style="background:#536e9d;color:white">Cancelar</button><button type="submit" id="confirmPay">Confirmar quitação</button></div></form></div></div><main>
 <section id="login" class="card"><h2>Entrar</h2><p>Acesse sua conta para registrar despesas.</p><form id="loginForm"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="submit">Entrar</button></form></section>
 <section id="app"><div class="layout"><aside class="sidebar"><button class="navbtn active" id="navDashboard" type="button">▦ Dashboard</button><button class="navbtn" id="navLaunch" type="button">＋ Novo gasto</button><button class="navbtn" id="navHistory" type="button">Lançamentos</button><button class="navbtn" id="navInstallments" type="button">Compras parceladas</button></aside><div>
 <section id="dashboard"><h2>Visão geral dos gastos</h2><p>Despesas efetivamente registradas no GL Family.</p><label style="max-width:230px">Período<select id="period"><option value="month">Mês atual</option><option value="all">Todo o período</option></select></label><div class="stats"><div class="metric"><small>Total gasto</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Quantidade de gastos</small><strong id="spentCount">0</strong></div><div class="metric"><small>Ticket médio</small><strong id="averageSpent">R$ 0,00</strong></div></div><div class="card" style="margin-bottom:16px"><h3>Parcelas com vencimento no mês</h3><p class="foot">As vencidas também aparecem até serem quitadas. Valores de financiamento podem sofrer encargos.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos pagos no período</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
@@ -61,33 +61,40 @@ async function loadInstallments(){
  db.from('transactions').select('id,description,amount,due_date,status,payment_method,category_label,paid_at,installment_amount_paid,installment_interest_paid,installment_group,installment_number,installment_total').not('installment_group','is',null).order('due_date',{ascending:true}).limit(1000)
  ]);
  if(b.error||t.error){notify('Falha ao consultar parcelas: '+(b.error?.message||t.error?.message));return}
- installmentBills=b.data||[];installmentTransactions=t.data||[];
+ installmentBills=(b.data||[]).filter(x=>!/^santander-|^nubank-/i.test(x.origin_key||''));installmentTransactions=t.data||[];
  drawInstallments();drawDueInstallments();
 }
 function installmentRows(){
  return [...installmentBills.map(x=>({...x,source:'bill'})),...installmentTransactions.map(x=>({...x,source:'transaction'}))];
 }
-async function markInstallmentPaid(x){
- const original=Number(x.amount);
- const supplied=prompt('Valor efetivamente pago (R$).\nValor original: '+money(original)+'\nInforme o total incluindo juros e encargos:',original.toFixed(2).replace('.',','));
- if(supplied===null)return;
- const actual=Number(supplied.trim().replace(/\s/g,'').replace(/\./g,'').replace(',','.'));
- if(!Number.isFinite(actual)||actual<=0||actual>100000000){notify('Valor pago inválido.');return}
-  const allowed=['Supermercado','Alimentação','Moradia','Contas da casa','Transporte','Veículo','Saúde','Educação','Lazer','Assinaturas','Compras','Outros'];
- const suggested=x.category_label||(x.source==='bill'?(installmentBucket(x)==='Carro'?'Veículo':installmentBucket(x)==='Casa'?'Moradia':'Compras'):'Compras');
- const selected=prompt('Categoria deste pagamento:\n'+allowed.map((v,i)=>(i+1)+'. '+v).join('\n')+'\n\nDigite o número da categoria:',String(Math.max(0,allowed.indexOf(suggested))+1));
- if(selected===null)return;
- const category=allowed[Number(selected)-1];
- if(!category){notify('Selecione uma categoria válida de 1 a '+allowed.length+'.');return}
-const interest=Math.max(0,Math.round((actual-original)*100)/100);
- if(actual<original){notify('Valor menor que a parcela. Não é possível quitar como pagamento integral.');return}
- if(!confirm('Confirmar pagamento de '+money(actual)+' hoje?\nParcela original: '+money(original)+'\nJuros e encargos: '+money(interest)))return;
- let error;
- if(x.source==='bill')({error}=await db.from('scheduled_bills').update({status:'paid',paid_at:new Date().toISOString(),amount_paid:actual,interest_paid:interest,category_label:category}).eq('id',x.id).eq('status','planned'));
- else ({error}=await db.from('transactions').update({status:'paid',paid_at:new Date().toISOString(),installment_amount_paid:actual,installment_interest_paid:interest,category_label:category}).eq('id',x.id).eq('status','planned'));
- if(error){notify('Falha ao quitar: '+error.message);return}
- notify('Parcela quitada: '+money(actual)+' (juros: '+money(interest)+').');await loadDashboard();
+let activePayment=null;
+function markInstallmentPaid(x){
+ activePayment=x;el('payDescription').textContent=x.description;
+ el('payDetails').textContent='Parcela '+(x.installment_number||'')+'/'+(x.installment_total||'')+' · Vencimento '+x.due_date+' · Valor original '+money(x.amount);
+ el('payAmount').value=Number(x.amount).toFixed(2);
+ const group=installmentBucket(x);
+ el('payCategory').value=x.category_label||(group==='Carro'?'Veículo':group==='Casa'?'Moradia':group==='Compras da casa'?'Contas da casa':'Compras');
+ updatePayInterest();el('payOverlay').hidden=false;el('payAmount').focus();
 }
+function updatePayInterest(){if(!activePayment)return;el('payInterest').textContent=money(Math.max(0,Number(el('payAmount').value||0)-Number(activePayment.amount)))}
+el('payAmount').addEventListener('input',updatePayInterest);
+function closePay(){el('payOverlay').hidden=true;activePayment=null}
+el('cancelPay').addEventListener('click',closePay);
+el('payOverlay').addEventListener('click',e=>{if(e.target===el('payOverlay'))closePay()});
+el('payForm').addEventListener('submit',async e=>{
+ e.preventDefault();const x=activePayment;if(!x)return;
+ const actual=Number(el('payAmount').value),original=Number(x.amount),category=el('payCategory').value;
+ if(!Number.isFinite(actual)||actual<original||!category){notify('Confira o valor e a categoria. Pagamento integral não pode ser inferior à parcela.');return}
+ const interest=Math.round((actual-original)*100)/100,button=el('confirmPay');button.disabled=true;
+ try{
+ const paid_at=new Date().toISOString();
+ let result;
+ if(x.source==='bill')result=await db.from('scheduled_bills').update({status:'paid',paid_at,amount_paid:actual,interest_paid:interest,category_label:category}).eq('id',x.id).eq('status','planned').select('id');
+ else result=await db.from('transactions').update({status:'paid',paid_at,installment_amount_paid:actual,installment_interest_paid:interest,category_label:category,due_date:localToday()}).eq('id',x.id).eq('status','planned').select('id');
+ if(result.error||!result.data?.length){notify(result.error?.message||'Parcela já quitada ou indisponível.');return}
+ closePay();notify('Parcela quitada: '+money(actual)+' · '+category+' · juros '+money(interest));await loadDashboard();await loadHistory();
+ }catch(err){notify('Não foi possível registrar: '+err.message)}finally{button.disabled=false}
+});
 function makeInstallmentLine(x){
  const box=document.createElement('div');box.className='line';box.style.alignItems='center';
  const info=document.createElement('span');const installment=x.installment_number&&x.installment_total?' ('+x.installment_number+'/'+x.installment_total+')':'';

@@ -14,7 +14,7 @@ function parseMoney(x:string):number|null{
  if(!m)return null;
  let raw=m[1].replace(/\s+/g,'');
  if(raw.includes(','))raw=raw.replace(/\./g,'').replace(',','.');
- else if((raw.match(/\./g)||[]).length>1)raw=raw.replace(/\./g,'');
+ else if(/^\d{1,3}(?:\.\d{3})+$/.test(raw)||(raw.match(/\./g)||[]).length>1)raw=raw.replace(/\./g,'');
  const n=Number(raw);
  return Number.isFinite(n)&&n>0&&n<=99999999&&Math.round(n*100)/100===n?n:null;
 }
@@ -40,7 +40,9 @@ function initial(x:string):any{
  let description=x.replace(/\b(gastei|gasto|paguei|compra|comprei|despesa|abasteci|recebi|receita|ganhei|entrou|salario|vendi|faturei)\b/gi,' ')
   .replace(/r\$\s*\d[\d.,]*/gi,' ').replace(/\b\d[\d.,]*\s*(?:reais|real)\b/gi,' ')
   .replace(/\b(?:hoje|ontem|anteontem|amanhã|amanha)\b/gi,' ')
+  .replace(/\b\d+\s*x\s*de\s*(?:r\$\s*)?\d[\d.,]*/gi,' ')
   .replace(/\b(?:em\s*)?\d+\s*x(?:\s*de)?\b/gi,' ')
+  .replace(/\b\d{1,7}(?:[.,]\d{1,2})?\b/i,' ')
   .replace(/\b(?:no|na)\s+cart[aã]o\s+(?:nubank|santander)\b/gi,' ')
   .replace(/\b(?:via|no|na|pelo|por)\s+(?:pix|d[eé]bito|transfer[eê]ncia|dinheiro|boleto)\b/gi,' ')
   .trim();

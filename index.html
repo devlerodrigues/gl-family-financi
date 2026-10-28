@@ -16,11 +16,12 @@ form{max-width:540px}form button{margin-top:17px}.row{padding:15px 0;border-bott
 <header><div><h1>GL Family Financi</h1><small>PROSPERIDADE PREMIUM · FINANÇAS FAMILIARES</small></div><span class="pill">ACESSO PRIVADO</span></header>
 <main><div id="login" class="card"><h2>Entrar na sua conta</h2><p class="muted">Use seu acesso autorizado do GL Family.</p><form id="loginform"><label>E-mail<input required type="email" id="email" autocomplete="username"></label><label>Senha<input required type="password" id="password" autocomplete="current-password"></label><button class="primary" type="submit">Entrar</button></form><p class="muted">A criação de usuários é feita pelo administrador. Não há cadastro público.</p></div>
 <div id="app"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><small id="user"></small><button id="logout">Sair da conta</button></div>
-<nav><button class="active" data-section="dashboard">Resumo</button><button data-section="accounts">Contas</button><button data-section="entries">Lançamentos</button><button data-section="recurrences">Recorrentes</button><button data-section="receipts">Comprovantes</button></nav>
-<section id="dashboard"><h2>Visão geral</h2><div class="grid"><div class="card"><small>Receitas pagas</small><div class="value" id="income">R$ 0,00</div></div><div class="card"><small>Despesas pagas</small><div class="value pink" id="expenses">R$ 0,00</div></div><div class="card"><small>Resultado realizado</small><div class="value gold" id="balance">R$ 0,00</div></div></div>
-<div class="card" style="margin-top:15px"><h2>Compromissos separados por origem</h2><div class="value gold" id="billTotal">R$ 0,00</div><div id="billRows"></div></div><div class="card" style="margin-top:15px"><h2>Parcelas futuras do Nubank</h2><div class="value gold" id="futureTotal">R$ 0,00</div><p class="muted">Previsões a partir de dezembro de 2026, identificadas na fatura enviada. Não são pagamentos realizados.</p><div id="futureRows"></div></div><div class="columns"><div class="card"><h2>Últimos lançamentos</h2><div id="recent">Nenhum lançamento.</div></div><div class="card"><h2>Contas a vencer</h2><div class="value gold" id="pending">R$ 0,00</div><p class="muted">Total de despesas planejadas ainda não pagas.</p></div></div></section>
+<nav><button class="active" data-section="dashboard">Resumo</button><button data-section="accounts">Contas</button><button data-section="entries">Lançamentos</button><button data-section="cards">Cartões</button><button data-section="fixed">Contas fixas</button><button data-section="recurrences">Recorrentes</button><button data-section="receipts">Comprovantes</button></nav>
+<section id="dashboard"><div class="card" style="margin-top:10px;text-align:center;padding:45px 20px"><h2>Bem-vindo ao GL Family</h2><p class="muted">Escolha uma área no menu acima para gerenciar suas finanças.</p></div></section>
+<section id="cards" hidden><h2>Cartões de crédito</h2><p class="muted">Parcelas futuras e baixas, sem importador de faturas.</p><div class="card"><h3>Cartão Santander</h3><div class="value gold" id="billCardsTotal">R$ 0,00</div><div id="billCardsRows"></div></div><div class="card" style="margin-top:15px"><h3>Nubank — parcelas futuras</h3><div class="value gold" id="futureTotal">R$ 0,00</div><p class="muted">Previsão calculada da última fatura; não representa pagamento efetuado.</p><div id="futureRows"></div></div></section>
+<section id="fixed" hidden><h2>Contas fixas e financiamentos</h2><p class="muted">Compromissos por origem, com baixa individual de parcelas.</p><div class="value gold" id="billFixedTotal">R$ 0,00</div><div id="billFixedRows"></div></section>
 <section id="accounts" hidden><h2>Contas bancárias</h2><div class="columns"><div class="card"><h3>Cadastrar conta</h3><form id="accountform"><label>Nome<input id="accountname" maxlength="120" placeholder="Ex.: Conta principal" required></label><label>Tipo<select id="accountkind"><option value="checking">Corrente</option><option value="savings">Poupança</option><option value="cash">Dinheiro</option><option value="investment">Investimento</option></select></label><label>Saldo inicial<input id="opening" type="number" step="0.01" value="0" required></label><button class="primary">Salvar conta</button></form></div><div class="card"><h3>Minhas contas</h3><div id="accountslist">Nenhuma conta cadastrada.</div></div></div></section>
-<section id="entries" hidden><h2>Lançamentos</h2><div class="columns"><div class="card"><h3>Novo lançamento</h3><form id="entryform"><label>Descrição<input id="description" maxlength="250" required></label><label>Tipo<select id="kind"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Valor<input id="amount" type="number" min="0.01" step="0.01" required></label><label>Conta<select id="accountselect" required></select></label><label>Vencimento<input id="date" type="date" required></label><label>Situação<select id="status"><option value="planned">Planejado / a pagar</option><option value="paid">Pago / recebido</option></select></label><button class="primary">Salvar lançamento</button></form></div><div class="card"><h3>Histórico</h3><div id="entrieslist">Nenhum lançamento.</div></div></div></section>
+<section id="entries" hidden><h2>Lançamentos</h2><div class="grid"><div class="card"><small>Receitas pagas</small><div class="value" id="income">R$ 0,00</div></div><div class="card"><small>Despesas pagas</small><div class="value pink" id="expenses">R$ 0,00</div></div><div class="card"><small>Resultado realizado</small><div class="value gold" id="balance">R$ 0,00</div></div></div><div class="columns"><div class="card"><h3>Últimos lançamentos</h3><div id="recent">Nenhum lançamento.</div></div><div class="card"><h3>Despesas planejadas</h3><div class="value gold" id="pending">R$ 0,00</div></div></div><div class="columns"><div class="card"><h3>Novo lançamento</h3><form id="entryform"><label>Descrição<input id="description" maxlength="250" required></label><label>Tipo<select id="kind"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Valor<input id="amount" type="number" min="0.01" step="0.01" required></label><label>Conta<select id="accountselect" required></select></label><label>Vencimento<input id="date" type="date" required></label><label>Situação<select id="status"><option value="planned">Planejado / a pagar</option><option value="paid">Pago / recebido</option></select></label><button class="primary">Salvar lançamento</button></form></div><div class="card"><h3>Histórico</h3><div id="entrieslist">Nenhum lançamento.</div></div></div></section>
 <section id="recurrences" hidden><h2>Contas recorrentes</h2><div class="columns"><div class="card"><h3>Nova recorrência mensal</h3><form id="ruleform"><label>Conta<select id="raccount" required></select></label><label>Descrição<input id="rdesc" required></label><label>Tipo<select id="rkind"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Valor<input id="ramount" type="number" min=".01" step=".01" required></label><label>Vencimento (dia 1–31)<input id="rday" type="number" min="1" max="31" value="10" required></label><button class="primary">Salvar recorrência</button></form></div><div class="card"><h3>Regras ativas</h3><div id="rulelist"></div><label>Mês de referência<input id="rmonth" type="month"></label><button id="generate" class="primary">Gerar contas deste mês</button><p class="muted">A geração repetida não duplica contas vinculadas à mesma regra.</p></div></div></section><section id="receipts" hidden><h2>Comprovantes — conferência</h2><div class="columns"><div class="card"><h3>Registrar comprovante</h3><p class="muted">Etapa preparatória para a IA no WhatsApp. Por enquanto, confira e informe os dados da foto antes de salvar. A imagem selecionada fica apenas no seu aparelho.</p><form id="receiptform"><label>Foto do comprovante<input id="receiptphoto" type="file" accept="image/*" capture="environment"></label><img id="receiptpreview" alt="Prévia do comprovante" style="display:none;width:100%;max-height:260px;object-fit:contain;margin-top:12px;border-radius:10px"><label>Estabelecimento<input id="receiptmerchant" required maxlength="120"></label><label>Valor<input id="receiptamount" type="number" min=".01" step=".01" required></label><label>Data<input id="receiptdate" type="date" required></label><label>Pagamento<select id="receiptpayment"><option value="pix">Pix</option><option value="debit">Débito</option><option value="credit">Crédito</option><option value="cash">Dinheiro</option><option value="other">Outro</option></select></label><button class="primary">Guardar para conferência</button></form></div><div class="card"><h3>Aguardando confirmação</h3><p class="muted">Confirme um comprovante para criar um lançamento financeiro. O sistema sinaliza possíveis duplicatas.</p><label>Conta para lançamento<select id="receiptaccount"></select></label><div id="receiptqueue"></div></div></div></section></div><div id="msg" role="status" aria-live="polite"></div></main>
 <script type="module">
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.58.0';
@@ -88,46 +89,37 @@ async function settleBill(bill,paid){
 }
 async function loadBills(){
  const {data,error}=await supabase.from('scheduled_bills').select('id,origin_key,description,installment_number,installment_total,amount,due_date,status,paid_at').order('due_date').limit(1000);
- const parent=$('billRows');parent.replaceChildren();
- if(error){parent.textContent='Falha ao carregar compromissos: '+error.message;return}
- const all=data||[];
- const groups=[
- {title:'Cartão Santander',match:x=>x.origin_key.startsWith('santander-')},
- {title:'Financiamento do carro',match:x=>x.origin_key.startsWith('byd-king-')},
- {title:'Financiamento da casa — Caixa',match:x=>x.origin_key.startsWith('caixa-casa-')},
- {title:'Royal Prestige — Panela',match:x=>x.origin_key.startsWith('royal-prestige-')}
+ const cards=$('billCardsRows'),fixed=$('billFixedRows');cards.replaceChildren();fixed.replaceChildren();
+ if(error){cards.textContent=error.message;fixed.textContent=error.message;return}
+ const all=data||[],groups=[
+  {title:'Santander',dest:cards,match:x=>x.origin_key.startsWith('santander-')},
+  {title:'Financiamento do carro',dest:fixed,match:x=>x.origin_key.startsWith('byd-king-')},
+  {title:'Financiamento da casa — Caixa',dest:fixed,match:x=>x.origin_key.startsWith('caixa-casa-')},
+  {title:'Royal Prestige — Panela',dest:fixed,match:x=>x.origin_key.startsWith('royal-prestige-')}
  ];
- let visibleTotal=0;
+ let cardsTotal=0,fixedTotal=0;
  for(const group of groups){
   const records=all.filter(group.match),pending=records.filter(x=>x.status==='planned'),paid=records.filter(x=>x.status==='paid');
   const panel=document.createElement('div');panel.className='card';panel.style.marginTop='12px';
   const title=document.createElement('h3');title.textContent=group.title;title.style.color='var(--gold)';panel.append(title);
   const count=document.createElement('p');count.className='muted';count.textContent=pending.length+' pendentes · '+paid.length+' pagas';panel.append(count);
   const upcoming=pending.slice(0,6);
-  visibleTotal+=upcoming.reduce((sum,x)=>sum+Number(x.amount),0);
-  const subtotal=document.createElement('strong');subtotal.textContent='Próximas '+upcoming.length+' parcelas: '+money(upcoming.reduce((sum,x)=>sum+Number(x.amount),0));panel.append(subtotal);
+  const subtotal=upcoming.reduce((sum,x)=>sum+Number(x.amount),0);
+  if(group.dest===cards)cardsTotal+=subtotal;else fixedTotal+=subtotal;
+  const summary=document.createElement('strong');summary.textContent='Próximas '+upcoming.length+' parcelas: '+money(subtotal);panel.append(summary);
   for(const bill of upcoming){
    const line=document.createElement('div');line.className='row';line.style.flexWrap='wrap';
-   const description=document.createElement('span');description.textContent=bill.due_date+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);
+   const label=document.createElement('span');label.textContent=bill.due_date+' · '+bill.description+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);
    const button=document.createElement('button');button.textContent='Marcar como pago';button.onclick=()=>settleBill(bill,true);
-   line.append(description,button);panel.append(line);
+   line.append(label,button);panel.append(line);
   }
-  if(pending.length>6){const more=document.createElement('p');more.className='muted';more.textContent='Outras '+(pending.length-6)+' parcelas permanecem programadas.';panel.append(more)}
-  if(paid.length){
-   const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Ver parcelas pagas ('+paid.length+')';details.append(summary);
-   for(const bill of paid.slice(-8).reverse()){
-    const line=document.createElement('div');line.className='row';line.style.flexWrap='wrap';
-    const label=document.createElement('span');label.textContent=bill.due_date+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);
-    const button=document.createElement('button');button.textContent='Reabrir';button.onclick=()=>settleBill(bill,false);
-    line.append(label,button);details.append(line);
-   }
-   panel.append(details);
-  }
-  if(!records.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='Sem parcelas cadastradas.';panel.append(empty)}
-  if(group.title.includes('Caixa')){const warning=document.createElement('p');warning.className='muted';warning.textContent='Valores habitacionais estimados; confira no boleto antes da baixa.';panel.append(warning)}
-  parent.append(panel);
+  if(pending.length>6){const more=document.createElement('p');more.className='muted';more.textContent='Outras '+(pending.length-6)+' parcelas continuam programadas.';panel.append(more)}
+  if(paid.length){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Pagas ('+paid.length+')';details.append(summary);
+   for(const bill of paid.slice(-8).reverse()){const line=document.createElement('div');line.className='row';const label=document.createElement('span');label.textContent=bill.due_date+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);const button=document.createElement('button');button.textContent='Reabrir';button.onclick=()=>settleBill(bill,false);line.append(label,button);details.append(line)}panel.append(details)}
+  if(group.title.includes('Caixa')){const note=document.createElement('p');note.className='muted';note.textContent='Parcelas estimadas. Confira o valor do boleto antes de liquidar.';panel.append(note)}
+  group.dest.append(panel);
  }
- $('billTotal').textContent=money(visibleTotal);
+ $('billCardsTotal').textContent=money(cardsTotal);$('billFixedTotal').textContent=money(fixedTotal);
 }
 let receipts=[];
 async function loadReceipts(){if(!user)return;const {data,error}=await supabase.from('receipt_reviews').select('id,merchant,amount,purchase_date,payment_method,status').eq('status','pending').order('created_at',{ascending:false});if(error){say(error.message);return}receipts=data||[];opts('receiptaccount',accounts);const parent=$('receiptqueue');parent.replaceChildren();if(!receipts.length){parent.textContent='Nenhum comprovante pendente.';return}for(const r of receipts){const container=document.createElement('div');container.className='row';const description=document.createElement('span');description.textContent=r.purchase_date+' · '+r.merchant+' · '+money(r.amount)+' · '+r.payment_method;const actions=document.createElement('div');const confirm=document.createElement('button');confirm.textContent='Confirmar';confirm.onclick=()=>confirmReceipt(r);const reject=document.createElement('button');reject.textContent='Descartar';reject.onclick=()=>rejectReceipt(r);actions.append(confirm,reject);container.append(description,actions);parent.append(container)}}
@@ -137,7 +129,7 @@ $('receiptform').addEventListener('submit',async e=>{e.preventDefault();const me
 async function confirmReceipt(r){const account_id=$('receiptaccount').value;if(!account_id)return say('Cadastre ou escolha uma conta');const {data:tx,error}=await supabase.from('transactions').insert({account_id,description:r.merchant,amount:r.amount,due_date:r.purchase_date,kind:'expense',status:'paid',paid_at:new Date().toISOString()}).select('id').single();if(error)return say(error.message);const update=await supabase.from('receipt_reviews').update({status:'confirmed',transaction_id:tx.id}).eq('id',r.id).eq('status','pending');if(update.error){await supabase.from('transactions').delete().eq('id',tx.id);return say(update.error.message)}say('Despesa registrada');await refresh()}
 async function rejectReceipt(r){const {error}=await supabase.from('receipt_reviews').update({status:'rejected'}).eq('id',r.id);if(error)return say(error.message);say('Comprovante descartado');await loadReceipts()}
 $('receiptdate').value=new Date().toISOString().slice(0,10);
-document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');for(const id of ['dashboard','accounts','entries','recurrences','receipts'])$(id).hidden=id!==b.dataset.section;say('')}));
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');for(const id of ['dashboard','accounts','entries','cards','fixed','recurrences','receipts'])$(id).hidden=id!==b.dataset.section;say('')}));
 $('date').value=new Date().toISOString().slice(0,10);
 const {data:{session},error}=await supabase.auth.getSession();if(error)say(formatError(error));await setUser(session?.user||null);
 supabase.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'||event==='SIGNED_OUT')setUser(session?.user||null)});

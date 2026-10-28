@@ -76,29 +76,58 @@ async function loadFuture(){
  $('futureRows').replaceChildren(...items.map(i=>row(i.date+' · '+i.description,money(i.amount))));
  if(!items.length)$('futureRows').textContent='Nenhuma parcela futura identificada.';
 }
+async function settleBill(bill,paid){
+ const action=paid?'confirmar o pagamento':'reabrir a parcela';
+ if(!window.confirm('Deseja '+action+' de '+bill.description+' · '+bill.installment_number+'/'+bill.installment_total+' no valor de '+money(bill.amount)+'?'))return;
+ const next=paid?{status:'paid',paid_at:new Date().toISOString()}:{status:'planned',paid_at:null};
+ const {data,error}=await supabase.from('scheduled_bills').update(next).eq('id',bill.id).eq('status',paid?'planned':'paid').select('id');
+ if(error)return say('Não foi possível atualizar: '+error.message);
+ if(!data?.length)return say('O status foi alterado em outra sessão. Atualize a tela.');
+ say(paid?'Parcela marcada como paga.':'Parcela reaberta como pendente.');
+ await loadBills();
+}
 async function loadBills(){
+ const {data,error}=await supabase.from('scheduled_bills').select('id,origin_key,description,installment_number,installment_total,amount,due_date,status,paid_at').order('due_date').limit(1000);
+ const parent=$('billRows');parent.replaceChildren();
+ if(error){parent.textContent='Falha ao carregar compromissos: '+error.message;return}
+ const all=data||[];
  const groups=[
-  {key:'santander',title:'Cartão Santander',match:x=>x.origin_key.startsWith('santander-')},
-  {key:'carro',title:'Financiamento do carro',match:x=>x.origin_key.startsWith('byd-king-')},
-  {key:'casa',title:'Financiamento da casa — Caixa',match:x=>x.origin_key.startsWith('caixa-casa-')},
-  {key:'panela',title:'Royal Prestige — Panela',match:x=>x.origin_key.startsWith('royal-prestige-')}
+ {title:'Cartão Santander',match:x=>x.origin_key.startsWith('santander-')},
+ {title:'Financiamento do carro',match:x=>x.origin_key.startsWith('byd-king-')},
+ {title:'Financiamento da casa — Caixa',match:x=>x.origin_key.startsWith('caixa-casa-')},
+ {title:'Royal Prestige — Panela',match:x=>x.origin_key.startsWith('royal-prestige-')}
  ];
- const parent=$('billRows');parent.replaceChildren();let totalNext=0;
- for(const g of groups){
-  const {data,error}=await supabase.from('scheduled_bills').select('origin_key,description,installment_number,installment_total,amount,due_date,status').eq('status','planned').order('due_date').limit(1000);
-  if(error){parent.textContent=error.message;return}
-  const subset=(data||[]).filter(g.match),upcoming=subset.slice(0,6);
-  const section=document.createElement('div');section.className='card';section.style.marginTop='12px';
-  const title=document.createElement('h3');title.textContent=g.title;title.style.color='var(--gold)';section.append(title);
-  const info=document.createElement('p');info.className='muted';info.textContent=subset.length+' parcelas pendentes · próximas '+upcoming.length+' exibidas';section.append(info);
-  const subtotal=upcoming.reduce((s,x)=>s+Number(x.amount),0);totalNext+=subtotal;
-  const summary=document.createElement('strong');summary.textContent='Próximas parcelas exibidas: '+money(subtotal);section.append(summary);
-  for(const x of upcoming)section.append(row(x.due_date+' · '+x.description+' · '+x.installment_number+'/'+x.installment_total,money(x.amount)));
-  if(!subset.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='Sem parcelas registradas neste grupo.';section.append(empty)}
-  if(g.key==='casa'){const note=document.createElement('p');note.className='muted';note.textContent='Valores estimados; confirmar no boleto de cada mês.';section.append(note)}
-  parent.append(section);
+ let visibleTotal=0;
+ for(const group of groups){
+  const records=all.filter(group.match),pending=records.filter(x=>x.status==='planned'),paid=records.filter(x=>x.status==='paid');
+  const panel=document.createElement('div');panel.className='card';panel.style.marginTop='12px';
+  const title=document.createElement('h3');title.textContent=group.title;title.style.color='var(--gold)';panel.append(title);
+  const count=document.createElement('p');count.className='muted';count.textContent=pending.length+' pendentes · '+paid.length+' pagas';panel.append(count);
+  const upcoming=pending.slice(0,6);
+  visibleTotal+=upcoming.reduce((sum,x)=>sum+Number(x.amount),0);
+  const subtotal=document.createElement('strong');subtotal.textContent='Próximas '+upcoming.length+' parcelas: '+money(upcoming.reduce((sum,x)=>sum+Number(x.amount),0));panel.append(subtotal);
+  for(const bill of upcoming){
+   const line=document.createElement('div');line.className='row';line.style.flexWrap='wrap';
+   const description=document.createElement('span');description.textContent=bill.due_date+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);
+   const button=document.createElement('button');button.textContent='Marcar como pago';button.onclick=()=>settleBill(bill,true);
+   line.append(description,button);panel.append(line);
+  }
+  if(pending.length>6){const more=document.createElement('p');more.className='muted';more.textContent='Outras '+(pending.length-6)+' parcelas permanecem programadas.';panel.append(more)}
+  if(paid.length){
+   const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Ver parcelas pagas ('+paid.length+')';details.append(summary);
+   for(const bill of paid.slice(-8).reverse()){
+    const line=document.createElement('div');line.className='row';line.style.flexWrap='wrap';
+    const label=document.createElement('span');label.textContent=bill.due_date+' · '+bill.installment_number+'/'+bill.installment_total+' · '+money(bill.amount);
+    const button=document.createElement('button');button.textContent='Reabrir';button.onclick=()=>settleBill(bill,false);
+    line.append(label,button);details.append(line);
+   }
+   panel.append(details);
+  }
+  if(!records.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='Sem parcelas cadastradas.';panel.append(empty)}
+  if(group.title.includes('Caixa')){const warning=document.createElement('p');warning.className='muted';warning.textContent='Valores habitacionais estimados; confira no boleto antes da baixa.';panel.append(warning)}
+  parent.append(panel);
  }
- $('billTotal').textContent=money(totalNext);
+ $('billTotal').textContent=money(visibleTotal);
 }
 let receipts=[];
 async function loadReceipts(){if(!user)return;const {data,error}=await supabase.from('receipt_reviews').select('id,merchant,amount,purchase_date,payment_method,status').eq('status','pending').order('created_at',{ascending:false});if(error){say(error.message);return}receipts=data||[];opts('receiptaccount',accounts);const parent=$('receiptqueue');parent.replaceChildren();if(!receipts.length){parent.textContent='Nenhum comprovante pendente.';return}for(const r of receipts){const container=document.createElement('div');container.className='row';const description=document.createElement('span');description.textContent=r.purchase_date+' · '+r.merchant+' · '+money(r.amount)+' · '+r.payment_method;const actions=document.createElement('div');const confirm=document.createElement('button');confirm.textContent='Confirmar';confirm.onclick=()=>confirmReceipt(r);const reject=document.createElement('button');reject.textContent='Descartar';reject.onclick=()=>rejectReceipt(r);actions.append(confirm,reject);container.append(description,actions);parent.append(container)}}

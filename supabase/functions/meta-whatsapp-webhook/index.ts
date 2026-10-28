@@ -14,42 +14,45 @@ async function validSignature(secret:string,body:string,header:string){
  return diff===0;
 }
 const token=()=>Deno.env.get('META_ACCESS_TOKEN')||Deno.env.get('META_WHATSAPP_ACCESS_TOKEN')||Deno.env.get('WHATSAPP_ACCESS_TOKEN');
-async function sendWhatsApp(phoneId:string,to:string,body:string){
+type SendResult={success:boolean,errorCode:number|null,messageId:string|null,recipientFormat:'webhook_wa_id'|'br_ninth_digit'};
+async function sendWhatsApp(phoneId:string,to:string,body:string):Promise<SendResult>{
+ const failure:SendResult={success:false,errorCode:null,messageId:null,recipientFormat:'webhook_wa_id'};
  const access=token();
- if(!access){console.warn('family_wa: outgoing WhatsApp token is not configured');return false}
- if(!/^[0-9]{5,32}$/.test(phoneId)||!/^[0-9]{8,18}$/.test(to))return false;
+ if(!access){console.warn('family_wa: outgoing WhatsApp token is not configured');return failure}
+ if(!/^[0-9]{5,32}$/.test(phoneId)||!/^[0-9]{8,18}$/.test(to))return failure;
  const version=Deno.env.get('META_GRAPH_VERSION')||'v26.0';
  const url='https://graph.facebook.com/'+version+'/'+phoneId+'/messages';
- const attempt=async(recipient:string):Promise<{success:boolean,errorCode:number|null}>=>{
+ const attempt=async(recipient:string,recipientFormat:SendResult['recipientFormat']):Promise<SendResult>=>{
   try{
    const response=await fetch(url,{
     method:'POST',headers:{authorization:'Bearer '+access,'content-type':'application/json'},
     body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:recipient,type:'text',text:{preview_url:false,body:body.slice(0,3900)}})
    });
-   if(response.ok)return {success:true,errorCode:null};
-   const details=await response.json().catch(()=>({}));
-   const errorCode=typeof details?.error?.code==='number'?details.error.code:null;
-   console.warn('family_wa: send rejected',JSON.stringify({status:response.status,code:errorCode,subcode:details?.error?.error_subcode??null,format:recipient===to?'webhook_wa_id':'br_ninth_digit'}));
-   return {success:false,errorCode};
+   const json=await response.json().catch(()=>({}));
+   if(response.ok){
+    const id=String(json?.messages?.[0]?.id||'');
+    if(!id){console.warn('family_wa: Meta accepted a message without an outbound ID');return {success:true,errorCode:null,messageId:null,recipientFormat}}
+    return {success:true,errorCode:null,messageId:id,recipientFormat};
+   }
+   const errorCode=typeof json?.error?.code==='number'?json.error.code:null;
+   console.warn('family_wa: send rejected',JSON.stringify({status:response.status,code:errorCode,subcode:json?.error?.error_subcode??null,format:recipientFormat}));
+   return {success:false,errorCode,messageId:null,recipientFormat};
   }catch(error){
    console.error('family_wa: outgoing request failed',String(error).slice(0,160));
-   return {success:false,errorCode:null};
+   return {success:false,errorCode:null,messageId:null,recipientFormat};
   }
  };
- const first=await attempt(to);
- if(first.success)return true;
- // Brazil: some inbound WhatsApp IDs omit the mobile ninth digit, but Meta's
- // test-recipient allowlist contains the full E.164 number with that digit.
- // Retry only on 131030 and only for a 12-digit BR number, never for arbitrary IDs.
- if(first.errorCode===131030&&/^55\d{10}$/.test(to)){
-  const withNinthDigit=to.slice(0,4)+'9'+to.slice(4);
-  const retry=await attempt(withNinthDigit);
-  if(retry.success){
-   console.info('family_wa: br_ninth_digit_fallback_succeeded');
-   return true;
-  }
+ const first=await attempt(to,'webhook_wa_id');
+ if(first.success)return first;
+ // Some Brazilian inbound WA IDs omit the mobile ninth digit. Retry only when
+ // Meta says the address is not on the test-recipient allowlist (131030).
+ if(first.errorCode===131030&&/^55\\d{10}$/.test(to)){
+  const recipient=to.slice(0,4)+'9'+to.slice(4);
+  const retry=await attempt(recipient,'br_ninth_digit');
+  if(retry.success)console.info('family_wa: br_ninth_digit_fallback_succeeded');
+  return retry;
  }
- return false;
+ return first;
 }
 function adminClient(){
  const url=Deno.env.get('SUPABASE_URL');

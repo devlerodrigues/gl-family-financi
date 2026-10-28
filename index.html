@@ -23,6 +23,8 @@ button:disabled{opacity:.55;cursor:default}.submit{width:100%;margin-top:24px}#l
 <label>Categoria<select id="category" required><option value="">Selecione a categoria</option><option>Supermercado</option><option>Alimentação</option><option>Moradia</option><option>Contas da casa</option><option>Transporte</option><option>Veículo</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Assinaturas</option><option>Compras</option><option>Outros</option></select></label>
 <label>Forma de pagamento<select id="payment" required><option value="">Selecione</option><option value="nubank">Cartão Nubank</option><option value="santander">Cartão Santander</option><option value="pix">Pix</option></select></label>
 <label>Data do pagamento<input id="date" type="date" required></label>
+<label style="display:flex;align-items:center;gap:10px"><input id="hasInstallments" type="checkbox" style="width:auto;margin:0"> Compra parcelada</label>
+<div id="installmentsFields" hidden><div class="gridFilters"><label>Parcela atual<input id="installmentNumber" type="number" min="1" max="120" value="1"></label><label>Total de parcelas<input id="installmentTotal" type="number" min="2" max="120" value="2"></label></div><p class="foot">Informe o valor de uma parcela. As próximas serão cadastradas como previstas para os meses seguintes, sem contar como pagas.</p></div>
 <button class="submit" id="save">Salvar gasto</button>
 </form><p class="foot">O gasto será registrado como pago. Não cria parcelas.</p></div></section>
 </div></div></section>
@@ -43,6 +45,9 @@ el('navLaunch').onclick=()=>switchView('launch');
 el('navHistory').onclick=()=>{switchView('history');loadHistory()};
 el('historySearch').addEventListener('input',drawHistory);for(const id of ['historyPeriod','historyCategory','historyPayment','historyUser'])el(id).addEventListener('change',drawHistory);
 el('period').onchange=()=>loadDashboard();
+el('hasInstallments').addEventListener('change',()=>{el('installmentsFields').hidden=!el('hasInstallments').checked});
+function nextMonthDate(date,offset){const [y,m,d]=date.split('-').map(Number);const first=new Date(Date.UTC(y,m-1+offset,1));const last=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();return [first.getUTCFullYear(),String(first.getUTCMonth()+1).padStart(2,'0'),String(Math.min(d,last)).padStart(2,'0')].join('-')}
+
 function showBreakdown(target,items,total){target.replaceChildren();if(!items.length){target.textContent='Sem gastos no período.';return}for(const [label,value] of items){const wrapper=document.createElement('div');wrapper.style.marginTop='15px';const line=document.createElement('div');line.className='line';const left=document.createElement('span');left.textContent=label;const right=document.createElement('strong');right.textContent=money(value);line.append(left,right);const track=document.createElement('div');track.className='bar';const fill=document.createElement('div');fill.className='fill';fill.style.width=(total>0?value/total*100:0)+'%';track.append(fill);wrapper.append(line,track);target.append(wrapper)}}
 let historyCache=[];
 async function loadHistory(){const {data,error}=await db.from('transactions').select('id,description,amount,category_label,payment_method,paid_at,due_date,recorded_by,recorded_by_name').eq('kind','expense').order('created_at',{ascending:false}).limit(500);if(error){notify('Erro ao carregar histórico: '+error.message);return}historyCache=data||[];const category=el('historyCategory');const previous=category.value;category.replaceChildren(new Option('Todas','all'));for(const name of [...new Set(historyCache.map(x=>x.category_label).filter(Boolean))].sort())category.add(new Option(name,name));category.value=[...category.options].some(o=>o.value===previous)?previous:'all';const users=el('historyUser'),selected=users.value;users.replaceChildren(new Option('Todos','all'));for(const [id,name] of new Map(historyCache.filter(x=>x.recorded_by).map(x=>[x.recorded_by,x.recorded_by_name||'Usuário'])))users.add(new Option(name,id));users.value=[...users.options].some(o=>o.value===selected)?selected:'all';drawHistory()}
@@ -94,6 +99,8 @@ el('readReceipt').addEventListener('click',async()=>{
   
   if(data?.category)el('category').value=data.category;
   if(data?.payment_method)el('payment').value=data.payment_method;
+  if(Number.isInteger(data?.installment_number)&&Number.isInteger(data?.installment_total)&&data.installment_total>data.installment_number&&data.installment_total<=120){el('hasInstallments').checked=true;el('installmentsFields').hidden=false;el('installmentNumber').value=data.installment_number;el('installmentTotal').value=data.installment_total}
+
   notify('Foto analisada. Confira todos os campos e clique em Salvar gasto.');
  }catch(err){notify('Não foi possível ler a foto: '+(err.message||'erro')+'. Você ainda pode preencher manualmente.')}
  finally{button.disabled=false;button.textContent='Ler foto com IA'}
@@ -115,7 +122,20 @@ el('expenseForm').addEventListener('submit',async e=>{
  e.preventDefault();const amount=Number(el('amount').value);
  if(!Number.isFinite(amount)||amount<=0||!registrationAccountId||!el('payment').value)return notify('Confira o valor e a forma de pagamento.');
  el('date').value=localToday();const button=el('save');button.disabled=true;notify('Salvando...');
- try{const {error}=await db.from('transactions').insert({account_id:registrationAccountId,payment_method:el('payment').value,description:el('description').value.trim(),amount,category_label:el('category').value,kind:'expense',status:'paid',due_date:el('date').value,paid_at:new Date().toISOString()});if(error){notify('Não foi possível salvar: '+error.message);return}e.target.reset();el('date').value=localToday();notify('Gasto registrado com sucesso.');await loadDashboard();switchView('dashboard')}catch(err){notify(err.message||'Falha ao salvar')}finally{button.disabled=false}
+ try{
+ const installment=el('hasInstallments').checked;
+ const number=installment?Number(el('installmentNumber').value):1,total=installment?Number(el('installmentTotal').value):1;
+ if(installment&&(!Number.isInteger(number)||!Number.isInteger(total)||number<1||total<2||number>total||total>120)){notify('Confira o número e o total de parcelas.');return}
+ const remaining=total-number;
+ if(remaining>0&&!confirm('Registrar esta parcela como paga e criar '+remaining+' parcela(s) futura(s) como previstas, de '+money(amount)+' cada?'))return;
+ const group=installment?crypto.randomUUID():null;
+ const base={account_id:registrationAccountId,payment_method:el('payment').value,description:el('description').value.trim(),amount,category_label:el('category').value,kind:'expense'};
+ const rows=[{...base,status:'paid',due_date:el('date').value,paid_at:new Date().toISOString(),installment_group:group,installment_number:installment?number:null,installment_total:installment?total:null}];
+ for(let i=number+1;i<=total;i++){rows.push({...base,description:base.description+' ('+i+'/'+total+')',status:'planned',due_date:nextMonthDate(el('date').value,i-number),paid_at:null,installment_group:group,installment_number:i,installment_total:total})}
+ const {error}=await db.from('transactions').insert(rows);
+ if(error){notify('Não foi possível salvar: '+error.message);return}
+ e.target.reset();el('installmentsFields').hidden=true;el('date').value=localToday();notify(remaining?'Gasto salvo e '+remaining+' parcelas futuras previstas.':'Gasto registrado com sucesso.');await loadDashboard();switchView('dashboard')
+}catch(err){notify(err.message||'Falha ao salvar')}finally{button.disabled=false}
 });
 db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showUser(null)});
 try{const {data,error}=await db.auth.getSession();if(error)notify(error.message);else await showUser(data.session?.user||null)}catch(err){notify('Não foi possível iniciar: '+(err.message||'erro'))}

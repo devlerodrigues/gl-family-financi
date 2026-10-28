@@ -86,6 +86,58 @@ async function recordOutboundStatuses(db:any,changes:any[]){
  return statuses.length;
 }
 
+
+async function diagnosticSendTest(req:Request):Promise<Response>{
+ try{
+  const jwt=(req.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
+  if(!jwt||jwt.length<40)return diagJson({error:'Faça login no GL Family.'},401);
+  const db=adminClient();
+  const {data:identity,error:authError}=await db.auth.getUser(jwt);
+  const user=identity?.user;
+  if(authError||!user)return diagJson({error:'Sessão inválida.'},401);
+  const {data:member}=await db.from('family_user_profiles').select('id').eq('id',user.id).maybeSingle();
+  if(!member)return diagJson({error:'Usuário não autorizado.'},403);
+  const {data:link,error:linkError}=await db.from('family_wa_links').select('wa_id').eq('user_id',user.id).maybeSingle();
+  if(linkError||!link)return diagJson({error:'Vincule seu WhatsApp antes de testar o envio.'},409);
+  const access=token();
+  if(!access)return diagJson({error:'META_ACCESS_TOKEN não configurado.'},503);
+  const {data:recent}=await db.from('family_wa_events').select('source_phone_id').eq('wa_id',link.wa_id).not('source_phone_id','is',null).order('received_at',{ascending:false}).limit(1);
+  let phoneId=String(recent?.[0]?.source_phone_id||'');
+  if(!phoneId){
+   const version=Deno.env.get('META_GRAPH_VERSION')||'v26.0';
+   const waba=Deno.env.get('META_WABA_ID')||'2551347102028900';
+   const response=await fetch('https://graph.facebook.com/'+version+'/'+waba+'/phone_numbers?fields=id,display_phone_number&limit=20',{headers:{authorization:'Bearer '+access}});
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok)return diagJson({error:'Meta não forneceu o número de origem para o teste.',meta_error_code:payload?.error?.code??null},502);
+   const phoneNumbers=Array.isArray(payload?.data)?payload.data:[];
+   if(phoneNumbers.length!==1)return diagJson({error:'Não foi possível selecionar automaticamente um número de origem. Envie AJUDA para atualizar os dados do webhook.'},409);
+   phoneId=String(phoneNumbers[0].id||'');
+  }
+  if(!/^[0-9]{5,32}$/.test(phoneId))return diagJson({error:'Identificador do número comercial inválido.'},409);
+  const {data:claimed,error:claimError}=await db.rpc('family_wa_claim_send_test',{p_user:user.id});
+  if(claimError)throw claimError;
+  if(!claimed)return diagJson({error:'Já foi solicitado um teste. Aguarde pelo menos 90 segundos antes de repetir.'},429);
+  const message='GL Family: teste de entrega. Se esta mensagem chegou, o agente consegue responder pelo WhatsApp.';
+  const result=await sendWhatsApp(phoneId,link.wa_id,message);
+  if(!result.success)return diagJson({error:'A Meta rejeitou a mensagem de teste.',meta_error_code:result.errorCode},502);
+  const time=new Date().toISOString();
+  const {error:saveError}=await db.from('family_wa_events').insert({
+   message_id:'diagnostic:'+crypto.randomUUID(),wa_id:link.wa_id,source_phone_id:phoneId,
+   received_at:time,processed_at:time,reply_text:message,reply_delivered_at:time,
+   outbound_message_id:result.messageId,outbound_recipient_format:result.recipientFormat
+  });
+  if(saveError)throw saveError;
+  if(result.messageId){
+   await db.from('family_wa_delivery_reports').upsert({message_id:result.messageId,status:'accepted'},{onConflict:'message_id',ignoreDuplicates:true});
+  }
+  console.info('family_wa: authorized_delivery_test_submitted',JSON.stringify({format:result.recipientFormat}));
+  return diagJson({meta_accepted:true,delivery_status:'accepted',note:'Aguarde o evento entregue/lido ou falha. Aceito pela API não confirma recebimento.'});
+ }catch(error){
+  console.error('family_wa: diagnostic send failed',String(error).slice(0,150));
+  return diagJson({error:'Não foi possível concluir o envio de teste.'},500);
+ }
+}
+
 const diagnosticsCors={'access-control-allow-origin':'https://gl-family-financi.vercel.app','access-control-allow-methods':'GET, POST, OPTIONS','access-control-allow-headers':'authorization, apikey, content-type, x-client-info','vary':'Origin'};
 const diagJson=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...diagnosticsCors,'content-type':'application/json','cache-control':'no-store'}});
 async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
@@ -134,7 +186,25 @@ async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
     }
    }catch(error){console.warn('family_wa: connectivity diagnostic unavailable')}
   }
-  const status={
+ 
+  let lastDelivery:any=null;
+  if(link?.wa_id){
+   const {data:recentEvents}=await db.from('family_wa_events')
+    .select('received_at,reply_delivered_at,outbound_message_id,last_error')
+    .eq('wa_id',link.wa_id).order('received_at',{ascending:false}).limit(1);
+   const last=recentEvents?.[0];
+   if(last){
+    let report:any=null;
+    if(last.outbound_message_id){
+     const {data:receipt}=await db.from('family_wa_delivery_reports').select('status,error_code,updated_at').eq('message_id',last.outbound_message_id).maybeSingle();
+     report=receipt;
+    }
+    lastDelivery={received_at:last.received_at,api_accepted:!!last.reply_delivered_at,
+     status:report?.status??(last.reply_delivered_at?'accepted':'not_submitted'),error_code:report?.error_code??null,
+     last_error:last.last_error??null};
+   }
+  }
+ const status={
    webhook_validated:appSecret,
    outgoing_token_configured:!!access,
    meta_api_accepted:tokenValid,
@@ -146,6 +216,7 @@ async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
    meta_error_code:graphCode,
    link_code_active:!!linkCode&&!linkCode.used_at&&Date.parse(linkCode.expires_at)>Date.now(),
    whatsapp_linked:!!link,
+   last_delivery:lastDelivery,
   };
   console.info('family_wa: authorized_health_check',JSON.stringify({meta_api_http_status:graphStatus,meta_error_code:graphCode,subscribed,link_active:status.link_code_active,requested_subscription:subscribe}));
   return diagJson(status);
@@ -212,6 +283,7 @@ Deno.serve(async(req:Request)=>{
   return plain('Forbidden',403);
  }
  if(req.method==='POST'&&u.searchParams.get('diagnostic')==='subscribe')return metaDiagnostic(req,true);
+ if(req.method==='POST'&&u.searchParams.get('diagnostic')==='send-test')return diagnosticSendTest(req);
  if(req.method!=='POST')return plain('Method not allowed',405);
  if(!secret)return plain('Webhook not configured',503);
  const raw=await req.text();

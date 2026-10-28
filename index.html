@@ -79,8 +79,44 @@ html{overflow-x:hidden}body{min-width:0;overflow-x:hidden}
 
 #cardCategoryPanel .categoryTap{padding:5px 2px}#cardCategoryPanel .metric strong{font-size:clamp(18px,4.8vw,25px)}#cardCategoryPanel .gridFilters label{margin-top:8px}#lastExpenses .categoryTap{border-radius:0}#lastExpenses .categoryTap:active,#cardCategoryPanel .categoryTap:active{background:#243e74}@media(max-width:600px){#cardCategoryPanel .gridFilters{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#cardCategoryPanel select{padding:12px 7px;font-size:14px}#dashboardMonthWrap{max-width:100%!important}#dashboardMonthWrap input{width:100%}}
 .categoryFieldHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;color:#e4e9f4;font-size:14px}.addCategoryButton{font-size:13px;min-height:38px;padding:8px 12px;white-space:nowrap}.categorySelectLabel{margin-top:4px}@media(max-width:380px){.addCategoryButton{font-size:12px;padding:8px}}
+
+/* User-selectable appearance */
+:root{--surface:#10214c;--metric:#162e62;--field:#091632;--text:#F8FAFC;--label:#e4e9f4;--border:#39548d;--header:#1e3a8a;--action-text:#172451;--track:#283d6c;--overlay-card:#152858}
+html[data-theme="pop"]{--bg:#0F172A;--card:#1E293B;--surface:#18253b;--metric:#24344b;--field:#111e33;--gold:#FACC15;--muted:#cbd5e1;--text:#F8FAFC;--label:#e2e8f0;--border:#3c4c62;--header:#0F172A;--action-text:#0F172A;--track:#334155;--overlay-card:#1E293B;--accent-detail:#EC4899}
+html[data-theme="corporate"]{--bg:#F2F5F8;--card:#ffffff;--surface:#0B1F3B;--metric:#ffffff;--field:#ffffff;--gold:#2563EB;--muted:#475569;--text:#0B1F3B;--label:#0B1F3B;--border:#d5dfeb;--header:#0B1F3B;--action-text:#ffffff;--track:#dbeafe;--overlay-card:#ffffff;--accent-detail:#059669}
+html[data-theme="premium"]{--bg:#FAF7F1;--card:#ffffff;--surface:#0E3B2E;--metric:#ffffff;--field:#ffffff;--gold:#0D9488;--muted:#52645c;--text:#1F2937;--label:#1F2937;--border:#d9e0d9;--header:#0E3B2E;--action-text:#ffffff;--track:#d9ebe5;--overlay-card:#ffffff;--accent-detail:#0D9488}
+body{color:var(--text)}header{background:var(--header)}header h1,header small{color:#F8FAFC}.card{border-color:var(--border)}h2{color:var(--gold)}p{color:var(--muted)}label{color:var(--label)}input,select{background:var(--field);border-color:var(--border);color:var(--text)}button{color:var(--action-text)}.sidebar,.installmentBox{background:var(--surface);border-color:var(--border)}.sidebar .navbtn{color:#F8FAFC}.sidebar .navbtn.active{color:var(--action-text)}.metric{background:var(--metric);border-color:var(--border)}.metric strong,.installmentValue,.installmentInner h4{color:var(--gold)}.bar{background:var(--track)}.payModal{background:var(--overlay-card);color:var(--text);border-color:var(--border)}.payDetails{background:var(--metric);color:var(--text)}.line,.categoryDetailRow{border-color:var(--border)}.categoryDetailRow strong,.categoryTotal{color:var(--gold)}.categoryFieldHead{color:var(--label)}
+html[data-theme="pop"] .fill{background:var(--accent-detail)}
+html[data-theme="corporate"] .fill{background:#059669}
+html[data-theme="premium"] .fill{background:#0D9488}
+html[data-theme="corporate"] .sidebar .navbtn.active,html[data-theme="premium"] .sidebar .navbtn.active{color:white}
+html[data-theme="corporate"] .navbtn.active,html[data-theme="premium"] .navbtn.active{color:white}
+html[data-theme="corporate"] .installmentHead small,html[data-theme="premium"] .installmentHead small{color:#e2e8f0}
+html[data-theme="corporate"] .payOverlay,html[data-theme="premium"] .payOverlay{background:#071426b0}
+html[data-theme="corporate"] #notice{color:#2563EB}
+html[data-theme="premium"] #notice{color:#0D9488}
+html[data-theme="corporate"] .foot,html[data-theme="premium"] .foot{color:var(--muted)}
+html[data-theme="corporate"] .sidebar,html[data-theme="premium"] .sidebar{color:#F8FAFC}
+html[data-theme="corporate"] .installmentBox,html[data-theme="premium"] .installmentBox{color:#F8FAFC}
+html[data-theme="corporate"] .installmentBox p,html[data-theme="premium"] .installmentBox p{color:#e2e8f0}
+html[data-theme="corporate"] .installmentInner,html[data-theme="premium"] .installmentInner{background:var(--card);color:var(--text)}
+html[data-theme="corporate"] .installmentInner p,html[data-theme="premium"] .installmentInner p{color:var(--muted)}
+html[data-theme="corporate"] .installmentHead .installmentValue,html[data-theme="premium"] .installmentHead .installmentValue{color:#F8FAFC}
+html[data-theme="corporate"] .metric strong{color:#059669}
+html[data-theme="premium"] .metric strong{color:#0D9488}
+.accountActions{position:relative;display:flex;align-items:center;gap:8px}
+#accountThemeToggle{background:transparent;color:#fff;border:1px solid #8da5c4;padding:8px 12px;min-height:38px;font-size:13px;white-space:nowrap}
+.themePanel{position:absolute;right:0;top:calc(100% + 12px);width:min(300px,calc(100vw - 28px));padding:18px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px;z-index:90;box-shadow:0 15px 40px #0004}
+.themePanel p{margin:7px 0 14px;font-size:13px}
+.themeSwatches{display:flex;gap:14px}
+.themeSwatch{display:flex;align-items:center;justify-content:center;gap:0;border-radius:50%;width:66px;height:66px;min-height:66px;padding:5px;border:3px solid transparent;background:var(--bg);box-shadow:0 1px 8px #0002;overflow:hidden}
+.themeSwatch span{height:43px;flex:1}.themeSwatch span:first-child{border-radius:25px 0 0 25px}.themeSwatch span:last-child{border-radius:0 25px 25px 0}
+.themeSwatch[aria-pressed="true"]{border-color:var(--gold);outline:2px solid var(--text);outline-offset:2px}
+#selectedThemeLabel{display:block;margin-top:15px;color:var(--muted)}
+@media(max-width:900px){.sidebar{background:var(--surface)!important;border-color:var(--border)!important}.sidebar .navbtn.active{color:var(--action-text)!important}}
+@media(max-width:420px){#accountThemeToggle{padding:8px 9px;font-size:12px}.accountActions{gap:5px}#logout{padding:8px 9px}}
 </style></head><body>
-<header><div><h1>GL Family</h1><small>Controle de gastos</small></div><button id="logout" hidden>Sair</button></header>
+<header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small></div></div></header>
 <div id="categoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="categoryDetailTitle"><h2 id="categoryDetailTitle">Detalhamento da categoria</h2><p id="categoryDetailPeriod"></p><div id="categoryDetailTotal" class="categoryTotal"></div><div id="categoryDetailList"></div><button id="categoryDetailClose" class="categoryClose" type="button">Fechar</button></div></div>
 <div id="newCategoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="newCategoryTitle"><h2 id="newCategoryTitle">Adicionar categoria</h2><p>Crie uma categoria para usar nos próximos lançamentos.</p><form id="newCategoryForm"><label>Nome da categoria<input id="newCategoryName" maxlength="60" minlength="2" placeholder="Ex.: Pets, Viagens, Presentes" required></label><div class="payActions"><button type="button" id="cancelNewCategory" style="background:#536e9d;color:white">Cancelar</button><button type="submit" id="saveNewCategory">Adicionar</button></div></form></div></div><div id="payOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="payTitle"><h2 id="payTitle">Quitar parcela</h2><p id="payDescription"></p><div id="payDetails" class="payDetails"></div><form id="payForm"><label>Valor efetivamente pago (R$)<input id="payAmount" type="number" step="0.01" min="0.01" required></label><label>Forma de pagamento<select id="payMethod" required><option value="">Selecione como pagou</option><option value="pix">Pix</option><option value="transferencia">Transferência bancária</option><option value="boleto">Boleto bancário</option><option value="debito">Cartão de débito</option><option value="dinheiro">Dinheiro</option><option value="outros">Outros</option></select></label><label>Categoria<select id="payCategory" required><option value="">Selecione</option><option>Supermercado</option><option>Alimentação</option><option>Moradia</option><option>Contas da casa</option><option>Transporte</option><option>Veículo</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Assinaturas</option><option>Compras</option><option>Outros</option></select></label><div class="payDetails">Juros e encargos: <strong id="payInterest">R$ 0,00</strong><p class="foot">A quitação entra no dashboard e no histórico como gasto realizado hoje.</p></div><div class="payActions"><button type="button" id="cancelPay" style="background:#536e9d;color:white">Cancelar</button><button type="submit" id="confirmPay">Confirmar quitação</button></div></form></div></div><div id="cardPayOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="cardPayTitle"><h2 id="cardPayTitle">Pagar fatura</h2><p id="cardPayDescription"></p><div class="payDetails" id="cardPayDetails"></div><form id="cardPayForm"><label>Valor efetivamente pago (R$)<input id="cardPayAmount" type="number" min="0.01" step="0.01" required></label><div class="payDetails">Juros e encargos: <strong id="cardPayInterest">R$ 0,00</strong><p class="foot">Este pagamento quita a fatura e não duplica as compras como despesas.</p></div><div class="payActions"><button type="button" id="cardPayCancel" style="background:#536e9d;color:white">Cancelar</button><button id="cardPayConfirm" type="submit">Confirmar pagamento</button></div></form></div></div><main>
 <section id="login" class="card"><h2>Entrar</h2><p>Acesse sua conta para registrar despesas.</p><form id="loginForm"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="submit">Entrar</button></form></section>
@@ -104,6 +140,17 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 const db=createClient('https://touqchuigiibfnzaqqwo.supabase.co','sb_publishable_nhTL2Vq-ykAttPCR7lMJGw_vZHSZ2tz');
 const el=id=>document.getElementById(id);
 const notify=s=>el('notice').textContent=s;
+
+const themeNames={pop:'Pop Fintech',corporate:'Corporate Trust',premium:'Premium Wealth'};
+let activeThemeUser='guest';
+function themeStorageKey(){return 'gl-family-theme-'+activeThemeUser}
+function applyTheme(name,save=true){const selected=themeNames[name]?name:'pop';document.documentElement.dataset.theme=selected;el('selectedThemeLabel').textContent=themeNames[selected];document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===selected)));if(save){try{localStorage.setItem(themeStorageKey(),selected)}catch(e){}}}
+function restoreTheme(user){activeThemeUser=user?.id||'guest';let saved='pop';try{saved=localStorage.getItem(themeStorageKey())||'pop'}catch(e){}applyTheme(saved,false)}
+el('accountThemeToggle').addEventListener('click',()=>{const panel=el('accountThemePanel');panel.hidden=!panel.hidden;el('accountThemeToggle').setAttribute('aria-expanded',String(!panel.hidden))});
+document.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',()=>{applyTheme(b.dataset.themeChoice);el('accountThemePanel').hidden=true;el('accountThemeToggle').setAttribute('aria-expanded','false')}));
+document.addEventListener('click',e=>{if(!e.target.closest('.accountActions')){el('accountThemePanel').hidden=true;el('accountThemeToggle').setAttribute('aria-expanded','false')}});
+restoreTheme(null);
+
 let registrationAccountId=null;
 
 let customExpenseCategories=[];
@@ -416,6 +463,7 @@ el('readReceipt').addEventListener('click',async()=>{
  finally{button.disabled=false;button.textContent='Ler foto com IA'}
 });
 async function showUser(user){
+ restoreTheme(user);
  el('login').style.display=user?'none':'block';el('app').style.display=user?'block':'none';el('logout').hidden=!user;
  if(!user)return;
  await loadCustomExpenseCategories();

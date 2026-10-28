@@ -36,7 +36,8 @@ function adminClient(){
  return createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 }
 
-const diagJson=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
+const diagnosticsCors={'access-control-allow-origin':'https://gl-family-financi.vercel.app','access-control-allow-methods':'GET, POST, OPTIONS','access-control-allow-headers':'authorization, apikey, content-type, x-client-info','vary':'Origin'};
+const diagJson=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...diagnosticsCors,'content-type':'application/json','cache-control':'no-store'}});
 async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
  try{
   const jwt=(req.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
@@ -121,6 +122,7 @@ async function handleOne(db:any,message:any,phoneId:string){
  return sent;
 }
 Deno.serve(async(req:Request)=>{
+ if(req.method==='OPTIONS')return new Response(null,{status:204,headers:diagnosticsCors});
  const secret=Deno.env.get('META_APP_SECRET');
  const verify=Deno.env.get('META_VERIFY_TOKEN')||'glfamily-meta-verify-2026-b83f5c9a2e71';
  const u=new URL(req.url);

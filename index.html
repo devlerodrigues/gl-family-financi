@@ -85,9 +85,23 @@ el('cardPayForm').addEventListener('submit',async e=>{
 });
 function drawCards(){
  const target=el('cardsContent');target.replaceChildren();
+ const summary=document.createElement('div');summary.className='stats';
+ const totalLimit=Object.values(cardInfo).reduce((s,c)=>s+c.limit,0);
+ const outstanding=cardCharges.filter(x=>!cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due)).reduce((s,x)=>s+Number(x.amount),0);
+ const allCharges=cardCharges.reduce((s,x)=>s+Number(x.amount),0);
+ for(const [label,value] of [['Limite total dos cartões',totalLimit],['Comprometido em faturas abertas',outstanding],['Limite estimado disponível',totalLimit-outstanding]]){
+  const cell=document.createElement('div');cell.className='metric';const name=document.createElement('small');name.textContent=label;const amount=document.createElement('strong');amount.textContent=money(value);cell.append(name,amount);summary.append(cell)
+ }
+ target.append(summary);
+ const note=document.createElement('p');note.className='foot';note.textContent='Limite disponível estimado com base apenas nas faturas cadastradas. O limite real pode variar por autorizações, pagamentos ainda não processados e compras não importadas.';target.append(note);
+
  for(const [card,cfg] of Object.entries(cardInfo)){
  const box=document.createElement('div');box.className='card';box.style.margin='15px 0';
- const title=document.createElement('h3');title.textContent='Cartão '+cfg.label+' · Limite '+money(cfg.limit);box.append(title);
+ const title=document.createElement('h3');title.textContent='Cartão '+cfg.label;box.append(title);
+ const charges=cardCharges.filter(x=>x.card===card);
+ const owing=charges.filter(x=>!cardPayments.some(p=>p.card===card&&p.statement_due===x.statement_due)).reduce((s,x)=>s+Number(x.amount),0);
+ const stats=document.createElement('div');stats.className='stats';
+ for(const [label,value] of [['Limite',cfg.limit],['Gasto em aberto',owing],['Disponível estimado',cfg.limit-owing]]){const cell=document.createElement('div');cell.className='metric';const cap=document.createElement('small');cap.textContent=label;const n=document.createElement('strong');n.textContent=money(value);cell.append(cap,n);stats.append(cell)}box.append(stats);
  const subtitle=document.createElement('p');subtitle.textContent='Fecha dia '+cfg.closing+' · Vence dia '+cfg.due;box.append(subtitle);
  const groups=new Map();for(const x of cardCharges.filter(x=>x.card===card)){const rows=groups.get(x.statement_due)||[];rows.push(x);groups.set(x.statement_due,rows)}
  if(!groups.size){const p=document.createElement('p');p.textContent='Sem compras novas registradas neste cartão.';box.append(p)}

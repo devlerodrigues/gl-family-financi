@@ -17,7 +17,7 @@ button:disabled{opacity:.55;cursor:default}.submit{width:100%;margin-top:24px}#l
 <section id="login" class="card"><h2>Entrar</h2><p>Acesse sua conta para registrar despesas.</p><form id="loginForm"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="submit">Entrar</button></form></section>
 <section id="app"><div class="layout"><aside class="sidebar"><button class="navbtn active" id="navDashboard" type="button">▦ Dashboard</button><button class="navbtn" id="navLaunch" type="button">＋ Lançamentos</button></aside><div>
 <section id="dashboard"><h2>Visão geral dos gastos</h2><p>Despesas efetivamente registradas no GL Family.</p><label style="max-width:230px">Período<select id="period"><option value="month">Mês atual</option><option value="all">Todo o período</option></select></label><div class="stats"><div class="metric"><small>Total gasto</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Quantidade de gastos</small><strong id="spentCount">0</strong></div><div class="metric"><small>Ticket médio</small><strong id="averageSpent">R$ 0,00</strong></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
-<section id="launch" hidden><div class="card" style="max-width:620px"><h2>Registrar gasto</h2><p>Preencha os dados para categorizar o pagamento.</p><div class="card" style="margin-bottom:16px"><h3>Comprovante por foto</h3><input id="receiptFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"><img id="receiptPreview" alt="Prévia" hidden style="max-width:100%;max-height:220px;margin-top:12px"><button id="readReceipt" type="button" disabled style="margin-top:12px">Ler foto com IA</button><p class="foot">Confira os dados identificados antes de salvar.</p></div><form id="expenseForm">
+<section id="launch" hidden><div class="card" style="max-width:620px"><h2>Registrar gasto</h2><p>Preencha os dados para categorizar o pagamento.</p><div class="card" style="margin-bottom:16px"><h3>Comprovante por foto</h3><input id="receiptFile" type="file" accept="image/*" capture="environment"><img id="receiptPreview" alt="Prévia" hidden style="max-width:100%;max-height:220px;margin-top:12px"><button id="readReceipt" type="button" disabled style="margin-top:12px">Ler foto com IA</button><p class="foot">Confira os dados identificados antes de salvar.</p></div><form id="expenseForm">
 <label>Descrição<input id="description" placeholder="Ex.: Supermercado BH" maxlength="250" required></label>
 <label>Valor (R$)<input id="amount" type="number" min=".01" step=".01" inputmode="decimal" placeholder="0,00" required></label>
 <label>Categoria<select id="category" required><option value="">Selecione a categoria</option><option>Supermercado</option><option>Alimentação</option><option>Moradia</option><option>Contas da casa</option><option>Transporte</option><option>Veículo</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Assinaturas</option><option>Compras</option><option>Outros</option></select></label>
@@ -55,6 +55,42 @@ async function loadDashboard(){
  for(const x of rows.slice(0,8)){const div=document.createElement('div');div.className='line';const label=document.createElement('span');label.textContent=x.due_date+' · '+x.description+' · '+(x.category_label||'Sem categoria');const amount=document.createElement('strong');amount.textContent=money(x.amount);div.append(label,amount);el('lastExpenses').append(div)}
 }
 
+let selectedPhoto=null;
+el('receiptFile').addEventListener('change',e=>{
+ const file=e.target.files&&e.target.files[0];selectedPhoto=file||null;
+ el('readReceipt').disabled=!file;
+ el('receiptPreview').hidden=!file;
+ if(file){
+  const url=URL.createObjectURL(file);
+  el('receiptPreview').src=url;
+  el('receiptPreview').onload=()=>URL.revokeObjectURL(url);
+  notify('Foto selecionada. Toque em Ler foto com IA.');
+ }
+});
+async function photoToJpeg(file){
+ const img=await createImageBitmap(file);
+ const max=1600,scale=Math.min(1,max/Math.max(img.width,img.height));
+ const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+ canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);img.close();
+ return canvas.toDataURL('image/jpeg',0.78);
+}
+el('readReceipt').addEventListener('click',async()=>{
+ const file=selectedPhoto;if(!file)return notify('Escolha ou fotografe um comprovante.');
+ const button=el('readReceipt');button.disabled=true;button.textContent='Lendo foto...';notify('Analisando comprovante...');
+ try{
+  const image=await photoToJpeg(file);
+  const {data,error}=await db.functions.invoke('analyze-receipt',{body:{image}});
+  if(error)throw new Error(error.message||'Falha no processamento');
+  if(data?.error)throw new Error(data.error);
+  if(data?.description)el('description').value=data.description;
+  if(data?.amount)el('amount').value=data.amount;
+  if(data?.date)el('date').value=data.date;
+  if(data?.category)el('category').value=data.category;
+  if(data?.payment_method)el('payment').value=data.payment_method;
+  notify('Foto analisada. Confira todos os campos e clique em Salvar gasto.');
+ }catch(err){notify('Não foi possível ler a foto: '+(err.message||'erro')+'. Você ainda pode preencher manualmente.')}
+ finally{button.disabled=false;button.textContent='Ler foto com IA'}
+});
 async function showUser(user){
  el('login').style.display=user?'none':'block';el('app').style.display=user?'block':'none';el('logout').hidden=!user;
  if(!user)return;

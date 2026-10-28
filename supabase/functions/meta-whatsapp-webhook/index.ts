@@ -62,6 +62,30 @@ function adminClient(){
  return createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 }
 
+
+async function recordOutboundStatuses(db:any,changes:any[]){
+ const allowed=new Set(['sent','delivered','read','failed','played']);
+ const rank:Record<string,number>={accepted:0,sent:1,failed:2,delivered:3,read:4,played:4};
+ const statuses=changes.flatMap((c:any)=>Array.isArray(c.value?.statuses)?c.value.statuses:[]);
+ for(const item of statuses){
+  const id=String(item?.id||'');
+  const status=String(item?.status||'');
+  if(!id.startsWith('wamid.')||!allowed.has(status))continue;
+  const errorCode=typeof item?.errors?.[0]?.code==='number'?item.errors[0].code:null;
+  const timestamp=Number(item?.timestamp);
+  const statusTime=Number.isFinite(timestamp)&&timestamp>0?new Date(timestamp*1000).toISOString():null;
+  const {data:existing,error:readError}=await db.from('family_wa_delivery_reports').select('status').eq('message_id',id).maybeSingle();
+  if(readError)throw readError;
+  if(existing&&(rank[existing.status]??0)>rank[status])continue;
+  const {error:writeError}=await db.from('family_wa_delivery_reports').upsert({
+   message_id:id,status,error_code:errorCode,status_time:statusTime,updated_at:new Date().toISOString()
+  },{onConflict:'message_id'});
+  if(writeError)throw writeError;
+  console.info('family_wa: outbound_delivery_status',JSON.stringify({status,errorCode}));
+ }
+ return statuses.length;
+}
+
 const diagnosticsCors={'access-control-allow-origin':'https://gl-family-financi.vercel.app','access-control-allow-methods':'GET, POST, OPTIONS','access-control-allow-headers':'authorization, apikey, content-type, x-client-info','vary':'Origin'};
 const diagJson=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...diagnosticsCors,'content-type':'application/json','cache-control':'no-store'}});
 async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
@@ -131,7 +155,7 @@ async function metaDiagnostic(req:Request,subscribe=false):Promise<Response>{
 async function handleOne(db:any,message:any,phoneId:string){
  const msgId=String(message?.id||'').slice(0,160),wa=String(message?.from||'');
  if(!msgId||!/^[0-9]{8,18}$/.test(wa))return true;
- const {data:previous,error:queryErr}=await db.from('family_wa_events').select('message_id,received_at,reply_text,reply_delivered_at').eq('message_id',msgId).maybeSingle();
+ const {data:previous,error:queryErr}=await db.from('family_wa_events').select('message_id,received_at,reply_text,reply_delivered_at,outbound_message_id').eq('message_id',msgId).maybeSingle();
  if(queryErr)throw queryErr;
  if(previous?.reply_delivered_at)return true;
  if(previous&&!previous.reply_text){
@@ -141,7 +165,7 @@ async function handleOne(db:any,message:any,phoneId:string){
  }
  let reply=previous?.reply_text||null;
  if(!reply){
-  const {error:createErr}=await db.from('family_wa_events').insert({message_id:msgId,wa_id:wa});
+  const {error:createErr}=await db.from('family_wa_events').insert({message_id:msgId,wa_id:wa,source_phone_id:phoneId});
   if(createErr){if(createErr.code==='23505')return false;throw createErr}
   try{
    reply=message.type==='text'
@@ -157,13 +181,25 @@ async function handleOne(db:any,message:any,phoneId:string){
   }
  }
  const sent=await sendWhatsApp(phoneId,wa,reply);
- if(sent){
-  await db.from('family_wa_events').update({reply_delivered_at:new Date().toISOString(),last_error:null}).eq('message_id',msgId);
-  console.info('family_wa: processed_and_replied',JSON.stringify({type:message.type}));
+ if(sent.success){
+  const {error:sentError}=await db.from('family_wa_events').update({
+   reply_delivered_at:new Date().toISOString(),
+   outbound_message_id:sent.messageId,
+   outbound_recipient_format:sent.recipientFormat,
+   source_phone_id:phoneId,
+   last_error:null
+  }).eq('message_id',msgId);
+  if(sentError)throw sentError;
+  if(sent.messageId){
+   const {error:reportError}=await db.from('family_wa_delivery_reports')
+    .upsert({message_id:sent.messageId,status:'accepted'},{onConflict:'message_id',ignoreDuplicates:true});
+   if(reportError)console.warn('family_wa: status placeholder not stored');
+  }
+  console.info('family_wa: meta_api_accepted_reply',JSON.stringify({type:message.type,recipient_format:sent.recipientFormat}));
  }else{
-  await db.from('family_wa_events').update({last_error:'WhatsApp send unavailable'}).eq('message_id',msgId);
+  await db.from('family_wa_events').update({last_error:'WhatsApp send unavailable: '+String(sent.errorCode??'unknown')}).eq('message_id',msgId);
  }
- return sent;
+ return sent.success;
 }
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:diagnosticsCors});
@@ -185,10 +221,12 @@ Deno.serve(async(req:Request)=>{
  if(data?.object!=='whatsapp_business_account')return plain('Ignored');
  const changes=(data.entry||[]).flatMap((e:any)=>e.changes||[]);
  const incoming=changes.flatMap((c:any)=>(c.value?.messages||[]).map((m:any)=>({message:m,phoneId:String(c.value?.metadata?.phone_number_id||'')})));
- console.info('family_wa: verified_event',JSON.stringify({message_count:incoming.length,outgoing_configured:!!token(),types:incoming.map((e:any)=>e.message.type)}));
- if(!incoming.length)return plain('EVENT_RECEIVED');
+ const statusCount=changes.reduce((n:number,c:any)=>n+(Array.isArray(c.value?.statuses)?c.value.statuses.length:0),0);
+ console.info('family_wa: verified_event',JSON.stringify({message_count:incoming.length,status_count:statusCount,outgoing_configured:!!token(),types:incoming.map((e:any)=>e.message.type)}));
+ if(!incoming.length&&!statusCount)return plain('EVENT_RECEIVED');
  let db:any;try{db=adminClient()}catch(error){console.error('family_wa: database unavailable');return plain('Internal error',503)}
  let allOk=true;
+ try{await recordOutboundStatuses(db,changes)}catch(error){console.error('family_wa: status tracking failed',String(error).slice(0,150));allOk=false}
  for(const item of incoming){try{if(!await handleOne(db,item.message,item.phoneId))allOk=false}catch(error){console.error('family_wa: handler error',String(error).slice(0,180));allOk=false}}
  return plain(allOk?'EVENT_RECEIVED':'Retry later',allOk?200:503);
 });

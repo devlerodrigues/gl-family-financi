@@ -135,6 +135,7 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 .usersSection label{margin-top:12px}
 .usersSaveButton{margin-top:14px;width:100%}
 @media(max-width:430px){.userRow{gap:7px}.userRole{font-size:10px;padding:4px 5px}.usersModal{padding:17px}}
+.userRoleSelect{width:auto;max-width:145px;min-width:112px;flex-shrink:0;font-size:12px;padding:9px 5px;border-radius:9px;background:var(--field);color:var(--text);border:1px solid var(--border)}@media(max-width:390px){.userRoleSelect{min-width:100px;max-width:113px;font-size:11px}}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="usersOverlay" class="payOverlay" hidden><div class="payModal usersModal" role="dialog" aria-modal="true" aria-labelledby="usersTitle"><div class="usersModalHead"><h2 id="usersTitle">Usuários da família</h2><button type="button" id="closeUsersPanel" class="usersClose">Fechar</button></div><p>Todos os usuários autorizados compartilham o mesmo orçamento, cartões e parcelas. Apenas o administrador convida pessoas e exclui lançamentos.</p><div id="usersList" class="usersList"><p>Carregando...</p></div><div id="userProfileEdit" class="usersSection"><h3>Meu perfil</h3><form id="editMyProfileForm"><label>Nome de exibição<input id="myProfileName" maxlength="80" required></label><button type="submit" class="usersSaveButton">Salvar meu nome</button></form></div><div id="userInviteSection" class="usersSection" hidden><h3>Convidar usuário</h3><p>Envie um convite por e-mail para criar uma nova conta.</p><form id="inviteUserForm"><label>Nome<input id="inviteUserName" maxlength="80" required placeholder="Nome da pessoa"></label><label>E-mail<input id="inviteUserEmail" type="email" required placeholder="nome@exemplo.com"></label><button id="inviteUserSubmit" type="submit" class="usersSaveButton">Enviar convite</button></form></div><p class="foot">Orçamento familiar compartilhado: lançamentos de todos os membros aparecem juntos. Cada compra nova registra quem a lançou.</p></div></div><div id="categoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="categoryDetailTitle"><h2 id="categoryDetailTitle">Detalhamento da categoria</h2><p id="categoryDetailPeriod"></p><div id="categoryDetailTotal" class="categoryTotal"></div><div id="categoryDetailList"></div><button id="categoryDetailClose" class="categoryClose" type="button">Fechar</button></div></div>
@@ -194,8 +195,29 @@ async function loadUsersPanel(){
  const info=document.createElement('div');info.className='userInfo';
  const name=document.createElement('strong');name.textContent=(profile.display_name||profile.email)+(profile.id===user.id?' (você)':'');
  const email=document.createElement('small');email.textContent=profile.email;
- const badge=document.createElement('span');badge.className='userRole';badge.textContent=profile.role==='admin'?'Administrador':'Usuário';
- info.append(name,email);row.append(icon,info,badge);list.append(row);
+ const roleLabel=profile.role==='admin'?'Administrador':'Usuário';
+ info.append(name,email);row.append(icon,info);
+ if(activeUserProfile?.role==='admin'){
+  const select=document.createElement('select');select.className='userRoleSelect';select.setAttribute('aria-label','Permissão de '+(profile.display_name||profile.email));
+  for(const [value,label] of [['member','Usuário'],['admin','Administrador']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option)}
+  select.value=profile.role;
+  select.addEventListener('change',async()=>{
+   const desired=select.value;
+   if(!confirm('Alterar '+(profile.display_name||profile.email)+' para '+(desired==='admin'?'Administrador':'Usuário')+'?')){select.value=profile.role;return}
+   select.disabled=true;
+   try{
+    const {error}=await db.rpc('family_set_user_role',{p_user_id:profile.id,p_role:desired});
+    if(error)throw error;
+    notify('Permissão atualizada para '+(desired==='admin'?'Administrador':'Usuário')+'.');
+    await loadUsersPanel();
+   }catch(err){select.value=profile.role;notify('Não foi possível alterar a permissão: '+err.message)}
+   finally{select.disabled=false}
+  });
+  row.append(select);
+ }else{
+  const badge=document.createElement('span');badge.className='userRole';badge.textContent=roleLabel;row.append(badge);
+ }
+ list.append(row);
  }
 }
 el('editMyProfileForm').addEventListener('submit',async e=>{e.preventDefault();const name=el('myProfileName').value.trim();if(name.length<2)return notify('Informe um nome válido.');const {data:{user}}=await db.auth.getUser();if(!user)return;const {error}=await db.from('family_user_profiles').update({display_name:name}).eq('id',user.id);if(error)return notify('Erro: '+error.message);notify('Nome atualizado.');await loadUsersPanel()});

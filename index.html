@@ -57,7 +57,7 @@ const rows=historyCache.filter(x=>{const date=(x.paid_at||x.due_date||'').slice(
 let installmentBills=[],installmentTransactions=[];
 async function loadInstallments(){
  const [b,t]=await Promise.all([
- db.from('scheduled_bills').select('id,description,installment_number,installment_total,amount,due_date,status,origin_key').order('due_date',{ascending:true}).limit(1000),
+ db.from('scheduled_bills').select('id,description,installment_number,installment_total,amount,due_date,status,origin_key,paid_at').order('due_date',{ascending:true}).limit(1000),
  db.from('transactions').select('id,description,amount,due_date,status,installment_group,installment_number,installment_total').not('installment_group','is',null).order('due_date',{ascending:true}).limit(1000)
  ]);
  if(b.error||t.error){notify('Falha ao consultar parcelas: '+(b.error?.message||t.error?.message));return}
@@ -107,7 +107,7 @@ async function loadDashboard(){
  const {data,error}=await db.from('transactions').select('description,amount,category_label,payment_method,due_date,paid_at').eq('kind','expense').eq('status','paid').order('paid_at',{ascending:false}).limit(1000);
  if(error){notify('Falha ao carregar os resultados: '+error.message);return}await loadInstallments();
  const period=el('period').value,month=localToday().slice(0,7);
- const rows=(data||[]).filter(x=>period==='all'||(x.paid_at?.slice(0,7)||x.due_date?.slice(0,7))===month);const total=rows.reduce((a,x)=>a+Number(x.amount),0);
+ const paidBills=installmentBills.filter(x=>x.status==='paid').map(x=>({...x,category_label:'Compras parceladas',payment_method:null}));const rows=[...(data||[]),...paidBills].filter(x=>period==='all'||(x.paid_at?.slice(0,7)||x.due_date?.slice(0,7))===month).sort((a,b)=>(b.paid_at||b.due_date||'').localeCompare(a.paid_at||a.due_date||''));const total=rows.reduce((a,x)=>a+Number(x.amount),0);
  el('totalSpent').textContent=money(total);el('spentCount').textContent=String(rows.length);el('averageSpent').textContent=money(rows.length?total/rows.length:0);
  const cats=new Map(),methods=new Map();const names={nubank:'Cartão Nubank',santander:'Cartão Santander',pix:'Pix'};
  for(const x of rows){const val=Number(x.amount);const cat=x.category_label||'Sem categoria',method=names[x.payment_method]||'Não informado';cats.set(cat,(cats.get(cat)||0)+val);methods.set(method,(methods.get(method)||0)+val)}

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GL Family — Registrar gasto</title>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0F172A"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="GL Family"><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><title>GL Family — Registrar gasto</title>
 <style>
 :root{--bg:#0b1738;--card:#152858;--gold:#fbbf24;--muted:#c5d2ec}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f8fafc;font:16px system-ui,Arial,sans-serif}
@@ -136,6 +136,44 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 .usersSaveButton{margin-top:14px;width:100%}
 @media(max-width:430px){.userRow{gap:7px}.userRole{font-size:10px;padding:4px 5px}.usersModal{padding:17px}}
 .userRoleSelect{width:auto;max-width:145px;min-width:112px;flex-shrink:0;font-size:12px;padding:9px 5px;border-radius:9px;background:var(--field);color:var(--text);border:1px solid var(--border)}@media(max-width:390px){.userRoleSelect{min-width:100px;max-width:113px;font-size:11px}}
+
+/* Planning dashboard and responsive iPhone interface */
+.planningHub{margin-top:22px;scroll-margin-top:16px}
+.planningHeading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.planningHeading h2{margin:0}.planningHeading p{margin:5px 0 0}
+.planningGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.planningGrid>.card{min-width:0;scroll-margin-top:18px}
+.planningGrid #forecastPanel,.planningGrid #goalsPanel{grid-column:span 2}
+.planningTitle{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.planningTitle h3{margin:0;font-size:19px}
+.planTag{font-size:11px;padding:5px 9px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+.planningQuickLinks{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 0 13px;scroll-snap-type:x mandatory}
+.planningQuickLinks a{flex-shrink:0;text-decoration:none;background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:999px;font-size:13px;scroll-snap-align:start}
+.planForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.planForm label{margin:0}.planForm button{align-self:end}
+.planSecondary{background:var(--surface);color:#fff;padding:10px 14px;min-height:40px;font-size:13px}
+.planRows{margin-top:13px}
+.planRow{padding:13px 0;border-bottom:1px solid var(--border);min-width:0}
+.planRowTop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.planRowTop>span{min-width:0;overflow-wrap:anywhere}
+.planRowTop strong{white-space:nowrap;font-size:14px}
+.planRow small{display:block;color:var(--muted);font-size:12px;margin:5px 0}
+.planBar{height:8px;border-radius:8px;background:var(--track);overflow:hidden;margin-top:9px}
+.planBar>div{height:100%;border-radius:8px;background:var(--gold)}
+.planBar>div.planWarning{background:#EC4899}
+.planRowActions{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.planRowActions button{min-height:34px;padding:6px 11px;font-size:12px}
+.planForecastSummary{font-weight:750;color:var(--gold);margin-top:10px}
+.planningSettings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.planningSettings label{margin:0;font-size:12px}.planningSettings input{padding:10px}
+.planCheck{display:flex;align-items:center;gap:8px}.planCheck input{width:auto;margin:0;accent-color:var(--gold)}
+.planAlert{padding:11px 12px;border-left:4px solid var(--gold);background:var(--metric);border-radius:8px;margin:8px 0;font-size:13px;line-height:1.5}
+.planAlert.urgent{border-color:#EC4899}
+.planAlert strong{display:block}
+.planEmpty{font-size:13px;color:var(--muted);padding:13px 0}
+@media(max-width:800px){.planningGrid{grid-template-columns:1fr}.planningGrid #forecastPanel,.planningGrid #goalsPanel{grid-column:auto}}
+@media(max-width:480px){.planningHeading h2{font-size:20px}.planningGrid{gap:11px}.planningGrid>.card{padding:15px}.planForm{grid-template-columns:1fr}.planForm button{width:100%}.planningSettings{grid-template-columns:1fr 1fr}.planningTitle h3{font-size:17px}.planningQuickLinks{margin-right:-10px}}
+@media(max-width:900px){.planningHub{padding-bottom:12px}}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="usersOverlay" class="payOverlay" hidden><div class="payModal usersModal" role="dialog" aria-modal="true" aria-labelledby="usersTitle"><div class="usersModalHead"><h2 id="usersTitle">Usuários da família</h2><button type="button" id="closeUsersPanel" class="usersClose">Fechar</button></div><p>Todos os usuários autorizados compartilham o mesmo orçamento, cartões e parcelas. Apenas o administrador convida pessoas e exclui lançamentos.</p><div id="usersList" class="usersList"><p>Carregando...</p></div><div id="userProfileEdit" class="usersSection"><h3>Meu perfil</h3><form id="editMyProfileForm"><label>Nome de exibição<input id="myProfileName" maxlength="80" required></label><button type="submit" class="usersSaveButton">Salvar meu nome</button></form></div><div id="userInviteSection" class="usersSection" hidden><h3>Convidar usuário</h3><p>Envie um convite por e-mail para criar uma nova conta.</p><form id="inviteUserForm"><label>Nome<input id="inviteUserName" maxlength="80" required placeholder="Nome da pessoa"></label><label>E-mail<input id="inviteUserEmail" type="email" required placeholder="nome@exemplo.com"></label><button id="inviteUserSubmit" type="submit" class="usersSaveButton">Enviar convite</button></form></div><p class="foot">Orçamento familiar compartilhado: lançamentos de todos os membros aparecem juntos. Cada compra nova registra quem a lançou.</p></div></div><div id="categoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="categoryDetailTitle"><h2 id="categoryDetailTitle">Detalhamento da categoria</h2><p id="categoryDetailPeriod"></p><div id="categoryDetailTotal" class="categoryTotal"></div><div id="categoryDetailList"></div><button id="categoryDetailClose" class="categoryClose" type="button">Fechar</button></div></div>
@@ -143,6 +181,18 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 <section id="login" class="card"><h2>Entrar</h2><p>Acesse sua conta para registrar despesas.</p><form id="loginForm"><label>E-mail<input id="email" type="email" autocomplete="username" required></label><label>Senha<input id="password" type="password" autocomplete="current-password" required></label><button class="submit">Entrar</button></form></section>
 <section id="app"><div class="layout"><aside class="sidebar"><button class="navbtn active" id="navDashboard" type="button">▦ Dashboard</button><button class="navbtn" id="navLaunch" type="button">＋ Novo gasto</button><button class="navbtn" id="navHistory" type="button">Lançamentos</button><button class="navbtn" id="navInstallments" type="button">Compras parceladas</button><button class="navbtn" id="navCards" type="button">Cartões</button></aside><div>
 <section id="dashboard"><h2>Visão geral dos gastos</h2><p>Compromissos e pagamentos em um só lugar.</p><label style="max-width:230px">Período<select id="period"><option value="month">Mês atual</option><option value="all">Todo o período</option></select></label><label style="max-width:230px" id="dashboardMonthWrap">Mês de referência<input type="month" id="dashboardMonth"></label><div class="stats"><div class="metric"><small>Total gasto / compromissos do período</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Total pago no período</small><strong id="totalPaid">R$ 0,00</strong></div><div class="metric"><small>Em aberto no período</small><strong id="totalOpen">R$ 0,00</strong></div></div><div class="card" style="margin-bottom:16px"><h3>Parcelas com vencimento no mês</h3><p class="foot">As vencidas também aparecem até serem quitadas. Valores de financiamento podem sofrer encargos.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Compras registradas nos cartões</h3><strong id="cardPurchased" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Compras no crédito registradas neste período, não confundidas com pagamento de fatura.</p></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos pagos no período</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="card" style="margin-bottom:16px" id="cardCategoryPanel"><h3 class="sec-title">Categorias das faturas dos cartões</h3><p class="foot">Compras de Nubank e Santander separadas por categoria e mês de vencimento. Toque em uma categoria para ver cada compra.</p><div class="gridFilters"><label>Mês da fatura<select id="cardCategoryMonth"></select></label><label>Cartão<select id="cardCategoryFilter"><option value="all">Ambos os cartões</option><option value="nubank">Nubank</option><option value="santander">Santander</option></select></label></div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><small>Valor das faturas selecionadas</small><strong id="cardCategoryTotal">R$ 0,00</strong></div><div class="metric"><small>Compras e parcelas</small><strong id="cardCategoryCount">0</strong></div></div><div id="cardCategoryChart"></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
+
+<section id="planningHub" class="planningHub" aria-label="Planejamento financeiro familiar">
+ <div class="planningHeading"><div><h2>Planejamento familiar</h2><p>Orçamentos, alertas, projeções e metas em um só lugar.</p></div><button id="refreshPlanning" type="button" class="planSecondary">Atualizar</button></div>
+ <div class="planningQuickLinks"><a href="#budgetPanel">Orçamento</a><a href="#alertsPanel">Alertas</a><a href="#forecastPanel">12 meses</a><a href="#peoplePanel">Por pessoa</a><a href="#goalsPanel">Metas</a></div>
+ <div class="planningGrid">
+  <div class="card" id="alertsPanel"><div class="planningTitle"><h3>Alertas inteligentes</h3><span class="planTag">No aplicativo</span></div><div id="alertsList" aria-live="polite">Carregando alertas...</div><form id="alertSettingsForm" class="planningSettings"><label>Alertar vencimentos com antecedência (dias)<input id="alertDays" type="number" min="1" max="30" value="5" required></label><label>Alerta de orçamento a partir de (%)<input id="alertThreshold" type="number" min="50" max="100" value="80" required></label><label class="planCheck"><input id="alertsEnabled" type="checkbox" checked> Ativar alertas</label><button type="submit" class="planSecondary">Salvar alertas</button></form><p class="foot">Alertas aparecem ao abrir o aplicativo; não são notificações push.</p></div>
+  <div class="card" id="budgetPanel"><div class="planningTitle"><h3>Orçamento por categoria</h3><span class="planTag" id="budgetMonthLabel"></span></div><form id="budgetForm" class="planForm"><label>Categoria<select id="budgetCategory" required></select></label><label>Limite mensal (R$)<input id="budgetAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required></label><button type="submit">Salvar limite</button></form><div id="budgetList" class="planRows"></div><p class="foot">Gastos previstos por vencimento, incluindo cartões e parcelas. Alterar um limite não muda os lançamentos.</p></div>
+  <div class="card" id="forecastPanel"><div class="planningTitle"><h3>Projeção de 12 meses</h3><span class="planTag">Compromissos conhecidos</span></div><p class="foot">Soma de parcelas, compras no crédito e gastos previstos. Não é previsão de receitas nem de novas compras.</p><div id="forecastSummary" class="planForecastSummary"></div><div id="forecastList" class="planRows"></div></div>
+  <div class="card" id="peoplePanel"><div class="planningTitle"><h3>Relatório por usuário</h3><span class="planTag" id="peopleMonthLabel"></span></div><p class="foot">Compras registradas no mês (data da compra para cartões), sem contar o pagamento da fatura novamente.</p><div id="peopleList" class="planRows"></div><p class="foot">Registros antigos sem identificação individual ficam atribuídos ao proprietário original ou em "Não identificado".</p></div>
+  <div class="card" id="goalsPanel"><div class="planningTitle"><h3>Metas financeiras</h3><span class="planTag">Compartilhadas</span></div><form id="goalForm" class="planForm"><label>Nome da meta<input id="goalName" maxlength="100" minlength="2" required placeholder="Ex.: Reserva de emergência"></label><label>Valor desejado (R$)<input id="goalTarget" type="number" min="0.01" step="0.01" inputmode="decimal" required></label><label>Prazo (opcional)<input id="goalDate" type="date"></label><button type="submit">Criar meta</button></form><div id="goalsList" class="planRows"></div><p class="foot">Os valores guardados são informados manualmente; não representam saldo bancário.</p></div>
+ </div>
+</section>
 <section id="cardsPage" hidden><h2>Cartões</h2><p>Compras e faturas separadas. Pagar uma fatura não cria outro gasto.</p><div id="cardsContent"></div></section><section id="installmentsPage" hidden><div class="card"><h2>Compras parceladas</h2><p>Prestações futuras, vencidas e pagas. Você pode quitar uma parcela antecipadamente.</p><label>Buscar compra<input id="installmentsSearch" placeholder="Ex.: BYD, Royal Prestige"></label><div id="installmentsList"></div></div></section><section id="history" hidden><div class="card"><h2>Lançamentos</h2><p>Localize um lançamento e exclua se necessário.</p><div class="gridFilters"><label>Buscar<input id="historySearch" placeholder="Descrição do gasto"></label><label>Período<select id="historyPeriod"><option value="all">Todos</option><option value="month">Mês atual</option><option value="last30">Últimos 30 dias</option></select></label><label>Categoria<select id="historyCategory"><option value="all">Todas</option></select></label><label>Situação<select id="historyStatus"><option value="all">Todas</option><option value="paid">Pagas</option><option value="planned">Previstas</option></select></label><label>Usuário<select id="historyUser"><option value="all">Todos</option></select></label><label>Pagamento<select id="historyPayment"><option value="all">Todos</option><option value="pix">Pix</option><option value="nubank">Cartão Nubank</option><option value="santander">Cartão Santander</option></select></label></div><p id="historySummary" class="foot"></p><div id="historyRows"></div></div></section><section id="launch" hidden><div class="card" style="max-width:620px"><h2>Registrar gasto</h2><p>Preencha os dados para categorizar o pagamento.</p><div class="card" style="margin-bottom:16px"><h3>Comprovante por foto</h3><input id="receiptFile" type="file" accept="image/*" capture="environment"><img id="receiptPreview" alt="Prévia" hidden style="max-width:100%;max-height:220px;margin-top:12px"><button id="readReceipt" type="button" disabled style="margin-top:12px">Ler foto com IA</button><p class="foot">Confira os dados identificados antes de salvar.</p></div><form id="expenseForm">
 <label>Descrição<input id="description" placeholder="Ex.: Supermercado BH" maxlength="250" required></label>
 <label>Valor (R$)<input id="amount" type="number" min=".01" step=".01" inputmode="decimal" placeholder="0,00" required></label>
@@ -165,12 +215,13 @@ const notify=s=>el('notice').textContent=s;
 const themeNames={pop:'Pop Fintech',corporate:'Corporate Trust',premium:'Premium Wealth'};
 let activeThemeUser='guest';
 function themeStorageKey(){return 'gl-family-theme-'+activeThemeUser}
-function applyTheme(name,save=true){const selected=themeNames[name]?name:'pop';document.documentElement.dataset.theme=selected;el('selectedThemeLabel').textContent=themeNames[selected];document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===selected)));if(save){try{localStorage.setItem(themeStorageKey(),selected)}catch(e){}}}
+function applyTheme(name,save=true){const selected=themeNames[name]?name:'pop';document.documentElement.dataset.theme=selected;document.querySelector('meta[name="theme-color"]')?.setAttribute('content',selected==='pop'?'#0F172A':selected==='corporate'?'#0B1F3B':'#0E3B2E');el('selectedThemeLabel').textContent=themeNames[selected];document.querySelectorAll('[data-theme-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.themeChoice===selected)));if(save){try{localStorage.setItem(themeStorageKey(),selected)}catch(e){}}}
 function restoreTheme(user){activeThemeUser=user?.id||'guest';let saved='pop';try{saved=localStorage.getItem(themeStorageKey())||'pop'}catch(e){}applyTheme(saved,false)}
 el('accountThemeToggle').addEventListener('click',()=>{const panel=el('accountThemePanel');panel.hidden=!panel.hidden;el('accountThemeToggle').setAttribute('aria-expanded',String(!panel.hidden))});
 document.querySelectorAll('[data-theme-choice]').forEach(b=>b.addEventListener('click',()=>{applyTheme(b.dataset.themeChoice);el('accountThemePanel').hidden=true;el('accountThemeToggle').setAttribute('aria-expanded','false')}));
 document.addEventListener('click',e=>{if(!e.target.closest('.accountActions')){el('accountThemePanel').hidden=true;el('accountThemeToggle').setAttribute('aria-expanded','false')}});
 restoreTheme(null);
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}))}
 
 
 let activeUserProfile=null;
@@ -222,6 +273,122 @@ async function loadUsersPanel(){
 }
 el('editMyProfileForm').addEventListener('submit',async e=>{e.preventDefault();const name=el('myProfileName').value.trim();if(name.length<2)return notify('Informe um nome válido.');const {data:{user}}=await db.auth.getUser();if(!user)return;const {error}=await db.from('family_user_profiles').update({display_name:name}).eq('id',user.id);if(error)return notify('Erro: '+error.message);notify('Nome atualizado.');await loadUsersPanel()});
 el('inviteUserForm').addEventListener('submit',async e=>{e.preventDefault();const button=el('inviteUserSubmit');button.disabled=true;try{const {data,error}=await db.functions.invoke('invite-family-user',{body:{name:el('inviteUserName').value.trim(),email:el('inviteUserEmail').value.trim()}});if(error)throw new Error(data?.error||error.message);if(data?.error)throw new Error(data.error);el('inviteUserForm').reset();notify('Convite enviado por e-mail.');await loadUsersPanel()}catch(err){notify('Não foi possível convidar: '+err.message)}finally{button.disabled=false}});
+
+
+/* Family planning: all amounts are BRL, shared among authenticated household members. */
+let familyBudgetRows=[],familyGoalRows=[],familyAlertSettings={due_days:5,budget_threshold:80,enabled:true};
+let planningTransactions=[];
+function planMonthOffset(ym,delta){const [y,m]=ym.split('-').map(Number);const d=new Date(Date.UTC(y,m-1+delta,1));return d.toISOString().slice(0,7)}
+function planMonthName(ym){return new Date(ym+'-02T12:00:00').toLocaleDateString('pt-BR',{month:'short',year:'numeric'})}
+function planMoney(v){return money(Number(v)||0)}
+function planNode(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;return n}
+function planEmpty(target,message){target.replaceChildren(planNode('div','planEmpty',message))}
+function planRow(target,title,value,detail,percent,warning){
+ const wrap=planNode('div','planRow'),top=planNode('div','planRowTop');
+ top.append(planNode('span','',title),planNode('strong','',value));wrap.append(top);
+ if(detail)wrap.append(planNode('small','',detail));
+ if(percent!=null){const track=planNode('div','planBar'),fill=planNode('div',warning?'planWarning':'');fill.style.width=Math.min(100,Math.max(0,percent))+'%';track.append(fill);wrap.append(track)}
+ target.append(wrap);return wrap;
+}
+function planningEntries(){
+ const tx=planningTransactions.filter(x=>x.kind==='expense').map(x=>({date:x.due_date,amount:Number(x.amount),category:x.category_label||'Sem categoria',user:x.recorded_by||x.owner_id||null,source:'transaction',purchaseDate:x.due_date}));
+ const bills=installmentBills.map(x=>({date:x.due_date,amount:Number(x.amount),category:x.category_label||(installmentBucket({...x,source:'bill'})==='Carro'?'Veículo':'Moradia'),user:x.paid_by||x.owner_id||null,source:'bill',purchaseDate:x.due_date}));
+ const cards=cardCharges.map(x=>({date:x.statement_due,amount:Number(x.amount),category:x.category_label||'Sem categoria',user:x.recorded_by||x.owner_id||null,source:'card',purchaseDate:x.purchase_date}));
+ return [...tx,...bills,...cards];
+}
+async function refreshPlanning(){
+ const [budgets,goals,settings,transactions]=await Promise.all([
+ db.from('family_category_budgets').select('*').order('category'),
+ db.from('family_savings_goals').select('*').order('created_at',{ascending:false}),
+ db.from('family_alert_settings').select('*').maybeSingle(),
+ db.from('transactions').select('owner_id,recorded_by,kind,amount,due_date,category_label').eq('kind','expense').order('due_date',{ascending:false}).limit(3000)
+ ]);
+ if(budgets.error||goals.error||transactions.error){notify('Não foi possível carregar planejamento: '+(budgets.error?.message||goals.error?.message||transactions.error?.message));return}
+ familyBudgetRows=budgets.data||[];familyGoalRows=goals.data||[];planningTransactions=transactions.data||[];
+ if(settings.data)familyAlertSettings=settings.data;
+ el('alertDays').value=familyAlertSettings.due_days;el('alertThreshold').value=familyAlertSettings.budget_threshold;el('alertsEnabled').checked=familyAlertSettings.enabled;
+ drawPlanning();
+}
+function drawPlanning(){
+ const month=el('dashboardMonth').value||localToday().slice(0,7),entries=planningEntries();
+ el('budgetMonthLabel').textContent=planMonthName(month);
+ el('peopleMonthLabel').textContent=planMonthName(month);
+ const cats=new Set([...entries.map(x=>x.category),...customExpenseCategories.map(x=>x.name),...familyBudgetRows.map(x=>x.category)]);
+ const select=el('budgetCategory'),old=select.value;select.replaceChildren(new Option('Selecione...',''));
+ for(const name of [...cats].sort((a,b)=>a.localeCompare(b,'pt-BR')))select.add(new Option(name,name));
+ if([...select.options].some(o=>o.value===old))select.value=old;
+ const budgets=familyBudgetRows.filter(x=>x.month===month),bTarget=el('budgetList');bTarget.replaceChildren();
+ if(!budgets.length)planEmpty(bTarget,'Nenhum limite cadastrado para este mês.');
+ for(const b of budgets){
+  const used=entries.filter(x=>x.date?.slice(0,7)===month&&x.category===b.category).reduce((s,x)=>s+x.amount,0),pct=used/Number(b.amount)*100;
+  const wrap=planRow(bTarget,b.category,planMoney(used)+' / '+planMoney(b.amount),pct>=100?'Limite ultrapassado em '+planMoney(used-Number(b.amount)):planMoney(Math.max(0,Number(b.amount)-used))+' disponível',pct,pct>=familyAlertSettings.budget_threshold);
+  const actions=planNode('div','planRowActions'),edit=planNode('button','planSecondary','Alterar limite');
+  edit.type='button';edit.onclick=()=>{el('budgetCategory').value=b.category;el('budgetAmount').value=Number(b.amount);el('budgetAmount').focus()};
+  actions.append(edit);
+  if(activeUserProfile?.role==='admin'){const del=planNode('button','planSecondary','Remover');del.type='button';del.onclick=async()=>{if(!confirm('Remover limite de '+b.category+' em '+month+'?'))return;const {error}=await db.from('family_category_budgets').delete().eq('id',b.id);if(error)return notify(error.message);await refreshPlanning()};actions.append(del)}
+  wrap.append(actions);
+ }
+ const forecast=el('forecastList');forecast.replaceChildren();let forecastTotal=0;
+ for(let i=0;i<12;i++){const m=planMonthOffset(month,i),value=entries.filter(x=>x.date?.slice(0,7)===m).reduce((s,x)=>s+x.amount,0);forecastTotal+=value;planRow(forecast,planMonthName(m),planMoney(value),i===0?'Mês selecionado':'Compromissos cadastrados',null,false)}
+ el('forecastSummary').textContent='Total previsto em 12 meses: '+planMoney(forecastTotal);
+ const people=el('peopleList');people.replaceChildren();const perPerson=new Map();
+ for(const x of entries.filter(x=>x.source!=='bill'&&x.purchaseDate?.slice(0,7)===month)){const key=x.user||'unknown';perPerson.set(key,(perPerson.get(key)||0)+x.amount)}
+ const peopleRows=[...perPerson].sort((a,b)=>b[1]-a[1]),peopleTotal=peopleRows.reduce((s,x)=>s+x[1],0);
+ if(!peopleRows.length)planEmpty(people,'Nenhuma compra registrada no mês.');
+ for(const [id,value] of peopleRows)planRow(people,id==='unknown'?'Não identificado':familyMemberName(id),planMoney(value),peopleTotal?Math.round(value/peopleTotal*100)+'% das compras registradas':null,peopleTotal?value/peopleTotal*100:0,false);
+ const goals=el('goalsList');goals.replaceChildren();if(!familyGoalRows.length)planEmpty(goals,'Crie a primeira meta da família.');
+ for(const g of familyGoalRows){
+  const pct=Number(g.saved_amount)/Number(g.target_amount)*100;
+  const wrap=planRow(goals,g.name,planMoney(g.saved_amount)+' / '+planMoney(g.target_amount),(g.target_date?'Prazo: '+new Date(g.target_date+'T12:00:00').toLocaleDateString('pt-BR')+' · ':'')+Math.round(pct)+'% alcançado',pct,false);
+  const actions=planNode('div','planRowActions'),add=planNode('button','planSecondary','Registrar aporte');add.type='button';
+  add.onclick=async()=>{const value=prompt('Quanto deseja acrescentar à meta '+g.name+'? (R$)','100');if(value===null)return;const amount=Number(value.replace(',','.'));if(!Number.isFinite(amount)||amount<=0)return notify('Informe um valor positivo.');const {error}=await db.rpc('family_goal_add_amount',{p_goal_id:g.id,p_amount:amount});if(error)return notify(error.message);await refreshPlanning();notify('Aporte registrado na meta.')};actions.append(add);
+  if(activeUserProfile?.role==='admin'){const del=planNode('button','planSecondary','Excluir meta');del.type='button';del.onclick=async()=>{if(!confirm('Excluir a meta '+g.name+'?'))return;const {error}=await db.from('family_savings_goals').delete().eq('id',g.id);if(error)return notify(error.message);await refreshPlanning()};actions.append(del)}
+  wrap.append(actions);
+ }
+ drawPlanningAlerts(entries,month);
+}
+function drawPlanningAlerts(entries,month){
+ const target=el('alertsList');target.replaceChildren();
+ if(!familyAlertSettings.enabled){planEmpty(target,'Alertas desativados neste aparelho/conta.');return}
+ const today=localToday(),now=new Date(today+'T12:00:00'),days=familyAlertSettings.due_days,alerts=[];
+ const dueItems=[
+ ...installmentBills.filter(x=>x.status!=='paid').map(x=>({date:x.due_date,amount:Number(x.amount),label:x.description})),
+ ...planningTransactions.filter(x=>x.kind==='expense'&&x.status!=='paid').map(x=>({date:x.due_date,amount:Number(x.amount),label:'Gasto previsto'}))
+ ];
+ const openStatements=new Map();
+ for(const x of cardCharges){const key=x.card+'|'+x.statement_due;if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;const item=openStatements.get(key)||{date:x.statement_due,amount:0,label:'Fatura '+x.card};item.amount+=Number(x.amount);openStatements.set(key,item)}
+ dueItems.push(...openStatements.values());
+ for(const x of dueItems){if(!x.date)continue;const diff=Math.round((new Date(x.date+'T12:00:00')-now)/86400000);if(diff<0)alerts.push({urgent:true,days:diff,text:x.label+' · '+planMoney(x.amount)+' · vencido há '+Math.abs(diff)+' dia(s)'});else if(diff<=days)alerts.push({urgent:false,days:diff,text:x.label+' · '+planMoney(x.amount)+' · vence '+(diff===0?'hoje':'em '+diff+' dia(s)')})}
+ for(const b of familyBudgetRows.filter(x=>x.month===month)){const spent=entries.filter(x=>x.date?.slice(0,7)===month&&x.category===b.category).reduce((s,x)=>s+x.amount,0),pct=spent/Number(b.amount)*100;if(pct>=familyAlertSettings.budget_threshold)alerts.push({urgent:pct>=100,days:999,text:'Orçamento '+b.category+': '+Math.round(pct)+'% utilizado ('+planMoney(spent)+' de '+planMoney(b.amount)+')'})}
+ alerts.sort((a,b)=>a.days-b.days);
+ if(!alerts.length)planEmpty(target,'Tudo em dia: nenhum vencimento próximo ou limite atingido.');
+ for(const a of alerts.slice(0,12)){const box=planNode('div','planAlert'+(a.urgent?' urgent':''));box.append(planNode('strong','',a.urgent?'Atenção':'Aviso'),planNode('span','',a.text));target.append(box)}
+ if(alerts.length>12)target.append(planNode('p','foot','Mais '+(alerts.length-12)+' alertas não exibidos.'));
+}
+el('refreshPlanning').addEventListener('click',async()=>{await loadFamilyProfiles();await loadInstallments();await loadCards();await refreshPlanning()});
+el('budgetForm').addEventListener('submit',async e=>{
+ e.preventDefault();const category=el('budgetCategory').value,amount=Number(el('budgetAmount').value),month=el('dashboardMonth').value||localToday().slice(0,7);
+ if(!category||!Number.isFinite(amount)||amount<=0)return notify('Confira categoria e limite.');
+ const old=familyBudgetRows.find(x=>x.month===month&&x.category===category);
+ const result=old?await db.from('family_category_budgets').update({amount,updated_at:new Date().toISOString()}).eq('id',old.id):await db.from('family_category_budgets').insert({month,category,amount});
+ if(result.error)return notify('Erro ao salvar orçamento: '+result.error.message);
+ el('budgetAmount').value='';await refreshPlanning();notify('Limite mensal salvo.');
+});
+el('goalForm').addEventListener('submit',async e=>{
+ e.preventDefault();const name=el('goalName').value.trim(),target_amount=Number(el('goalTarget').value),target_date=el('goalDate').value||null;
+ if(name.length<2||!Number.isFinite(target_amount)||target_amount<=0)return notify('Confira nome e valor da meta.');
+ const {error}=await db.from('family_savings_goals').insert({name,target_amount,target_date});
+ if(error)return notify('Erro ao criar meta: '+error.message);
+ el('goalForm').reset();await refreshPlanning();notify('Meta criada.');
+});
+el('alertSettingsForm').addEventListener('submit',async e=>{
+ e.preventDefault();const due_days=Number(el('alertDays').value),budget_threshold=Number(el('alertThreshold').value),enabled=el('alertsEnabled').checked;
+ if(!Number.isInteger(due_days)||due_days<1||due_days>30||!Number.isInteger(budget_threshold)||budget_threshold<50||budget_threshold>100)return notify('Confira os limites dos alertas.');
+ const {data:{user}}=await db.auth.getUser();if(!user)return;
+ const {error}=await db.from('family_alert_settings').upsert({user_id:user.id,due_days,budget_threshold,enabled});
+ if(error)return notify('Erro ao salvar alertas: '+error.message);
+ familyAlertSettings={due_days,budget_threshold,enabled};drawPlanning();notify('Preferências de alertas salvas.');
+});
 
 let registrationAccountId=null;
 
@@ -471,7 +638,7 @@ async function loadDashboard(){
  const cats=new Map(),methods=new Map(),names={nubank:'Cartão Nubank',santander:'Cartão Santander',pix:'Pix'};
  for(const x of rows){const val=x.chartAmount,cat=x.category_label||'Sem categoria',method=names[x.payment_method]||'Outros pagamentos';cats.set(cat,(cats.get(cat)||0)+val);methods.set(method,(methods.get(method)||0)+val)}
  const sorted=m=>[...m].sort((a,b)=>b[1]-a[1]);dashboardDetailRows=rows;showBreakdown(el('categoryChart'),sorted(cats),plannedAmount,openCategoryDetail);showBreakdown(el('paymentChart'),sorted(methods),plannedAmount,label=>openCategoryDetail(label,dashboardDetailRows,'method'));
- const last=el('lastExpenses');last.replaceChildren();if(!rows.length){last.textContent='Nenhum gasto ou compromisso neste período.';return}
+ const last=el('lastExpenses');last.replaceChildren();await refreshPlanning();if(!rows.length){last.textContent='Nenhum gasto ou compromisso neste período.';return}
  for(const x of rows.slice(0,8)){const div=document.createElement('button');div.type='button';div.className='categoryTap';div.addEventListener('click',()=>openCategoryDetail(x.category_label||'Sem categoria',[x]));const inner=document.createElement('div');inner.className='line';const label=document.createElement('span');label.textContent=x.due_date+' · '+x.description+' · '+(x.category_label||'Sem categoria');const amount=document.createElement('strong');amount.textContent=money(x.chartAmount);inner.append(label,amount);div.append(inner);last.append(div)}
 }
 

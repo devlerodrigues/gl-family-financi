@@ -53,7 +53,7 @@ $('entryform').addEventListener('submit',async e=>{e.preventDefault();if(!user||
 function md(y,m,d){return y+'-'+String(m).padStart(2,'0')+'-'+String(Math.min(d,new Date(y,m,0).getDate())).padStart(2,'0')}
 $('ruleform').onsubmit=async e=>{e.preventDefault();const {error}=await supabase.from('recurring_rules').insert({account_id:$('raccount').value,description:$('rdesc').value.trim(),kind:$('rkind').value,amount:+$('ramount').value,due_day:+$('rday').value});if(error)return say(formatError(error));e.target.reset();say('Recorrência salva');await refresh()};
 $('generate').onclick=async()=>{const period=$('rmonth').value;if(!period)return say('Escolha o mês');let [y,m]=period.split('-').map(Number),done=0;for(const r of rules.filter(x=>x.active)){if(occurrences.some(o=>o.rule_id===r.id&&o.period===period+'-01'))continue;const t=await supabase.from('transactions').insert({account_id:r.account_id,description:r.description,kind:r.kind,amount:r.amount,status:'planned',due_date:md(y,m,r.due_day)}).select('id').single();if(t.error)return say(formatError(t.error));const a=await supabase.from('recurring_occurrences').insert({rule_id:r.id,period:period+'-01',transaction_id:t.data.id});if(a.error){await supabase.from('transactions').delete().eq('id',t.data.id);return say(formatError(a.error))}occurrences.push({rule_id:r.id,period:period+'-01'});done++}say(done+' contas do mês geradas');await refresh()};
-$('pdate').value=new Date().toISOString().slice(0,10);$('rmonth').value=new Date().toISOString().slice(0,7);
+$('rmonth').value=new Date().toISOString().slice(0,7);
 
 function csvRows(text){
  const out=[];let fields=[],field='',quoted=false;

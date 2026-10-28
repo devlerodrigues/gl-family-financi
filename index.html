@@ -43,16 +43,16 @@ el('navLaunch').onclick=()=>switchView('launch');
 el('period').onchange=()=>loadDashboard();
 function showBreakdown(target,items,total){target.replaceChildren();if(!items.length){target.textContent='Sem gastos no período.';return}for(const [label,value] of items){const wrapper=document.createElement('div');wrapper.style.marginTop='15px';const line=document.createElement('div');line.className='line';const left=document.createElement('span');left.textContent=label;const right=document.createElement('strong');right.textContent=money(value);line.append(left,right);const track=document.createElement('div');track.className='bar';const fill=document.createElement('div');fill.className='fill';fill.style.width=(total>0?value/total*100:0)+'%';track.append(fill);wrapper.append(line,track);target.append(wrapper)}}
 async function loadDashboard(){
- const {data,error}=await db.from('transactions').select('description,amount,category_label,payment_method,due_date').eq('kind','expense').eq('status','paid').order('due_date',{ascending:false}).limit(1000);
+ const {data,error}=await db.from('transactions').select('description,amount,category_label,payment_method,due_date,paid_at').eq('kind','expense').eq('status','paid').order('paid_at',{ascending:false}).limit(1000);
  if(error){notify('Falha ao carregar os resultados: '+error.message);return}
  const period=el('period').value,month=localToday().slice(0,7);
- const rows=(data||[]).filter(x=>period==='all'||x.due_date?.startsWith(month));const total=rows.reduce((a,x)=>a+Number(x.amount),0);
+ const rows=(data||[]).filter(x=>period==='all'||(x.paid_at?.slice(0,7)||x.due_date?.slice(0,7))===month);const total=rows.reduce((a,x)=>a+Number(x.amount),0);
  el('totalSpent').textContent=money(total);el('spentCount').textContent=String(rows.length);el('averageSpent').textContent=money(rows.length?total/rows.length:0);
  const cats=new Map(),methods=new Map();const names={nubank:'Cartão Nubank',santander:'Cartão Santander',pix:'Pix'};
  for(const x of rows){const val=Number(x.amount);const cat=x.category_label||'Sem categoria',method=names[x.payment_method]||'Não informado';cats.set(cat,(cats.get(cat)||0)+val);methods.set(method,(methods.get(method)||0)+val)}
  const sort=m=>[...m].sort((a,b)=>b[1]-a[1]);showBreakdown(el('categoryChart'),sort(cats),total);showBreakdown(el('paymentChart'),sort(methods),total);
  el('lastExpenses').replaceChildren();if(!rows.length){el('lastExpenses').textContent='Nenhum gasto lançado neste período.';return}
- for(const x of rows.slice(0,8)){const div=document.createElement('div');div.className='line';const label=document.createElement('span');label.textContent=x.due_date+' · '+x.description+' · '+(x.category_label||'Sem categoria');const amount=document.createElement('strong');amount.textContent=money(x.amount);div.append(label,amount);el('lastExpenses').append(div)}
+ for(const x of rows.slice(0,8)){const div=document.createElement('div');div.className='line';const label=document.createElement('span');label.textContent=(x.paid_at?new Date(x.paid_at).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'}):x.due_date)+' · '+x.description+' · '+(x.category_label||'Sem categoria');const amount=document.createElement('strong');amount.textContent=money(x.amount);div.append(label,amount);el('lastExpenses').append(div)}
 }
 
 let selectedPhoto=null;
@@ -84,7 +84,7 @@ el('readReceipt').addEventListener('click',async()=>{
   if(data?.error)throw new Error(data.error);
   if(data?.description)el('description').value=data.description;
   if(data?.amount)el('amount').value=data.amount;
-  if(data?.date)el('date').value=data.date;
+  if(data?.date&&data.date<=localToday())el('date').value=data.date;
   if(data?.category)el('category').value=data.category;
   if(data?.payment_method)el('payment').value=data.payment_method;
   notify('Foto analisada. Confira todos os campos e clique em Salvar gasto.');

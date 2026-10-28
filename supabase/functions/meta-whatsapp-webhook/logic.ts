@@ -107,7 +107,7 @@ function answer(s:any,key:string,raw:string,accounts:any[],people:any[],cats:str
   if(!m)return 'Forma de pagamento inválida. Escolha uma opção da lista.';
   s.method=m[0];s.account_id=null;s.card=null;s.paid_status=null;return null;
  }
- if(key==='card'){if(n==='1'||n.includes('nubank')){s.card='nubank';return null}if(n==='2'||n.includes('santander')){s.card='santander';return null}return 'Os cartões disponíveis são 1. Nubank ou 2. Santander.'}
+ if(key==='card'){if(n==='1'||n.includes('nubank')){s.card='nubank';s.method='card';s.account_id=null;s.paid_status=null;return null}if(n==='2'||n.includes('santander')){s.card='santander';s.method='card';s.account_id=null;s.paid_status=null;return null}return 'Os cartões disponíveis são 1. Nubank ou 2. Santander.'}
  if(key==='account_id'){const name=findOption(text,accounts.map(a=>a.name));const a=accounts.find(x=>x.name===name);if(!a)return 'Escolha uma conta cadastrada pelo número ou nome exato.';s.account_id=a.id;return null}
  if(key==='date'){const v=parseDate(text);if(!v)return 'Data inválida. Use HOJE, ONTEM ou DD/MM/AAAA.';const time=Date.parse(v+'T12:00:00Z');if(time<Date.parse('2000-01-01T12:00:00Z')||time>Date.parse(shift(today(),365)+'T12:00:00Z'))return 'A data está fora do período permitido.';s.date=v;return null}
  if(key==='installments'){const v=instalments(text);if(!v)return 'Informe 1 para parcela única ou 2x, 3x, etc. (até 120).';s.installments=v;s.installment_start=v===1?1:null;s.amount_basis=v===1?'each':null;return null}

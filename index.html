@@ -1163,7 +1163,7 @@ function editBill(x){
 }
 function renderBillPage(){
  const today=localToday(),days=Math.max(1,Math.min(30,Number(familyAlertSettings.due_days)||5));
- const soon=billShiftDays(today,days),monthly=billShiftDays(today,30),allOpen=billAccountRows.filter(x=>x.status==='planned');
+ const soon=billShiftDays(today,days),monthly=billShiftDays(today,30),allOpen=allDueBillsForAlerts();
  el('billSoonTitle').textContent='Próximos vencimentos ('+days+' dias)';
  el('billOpenTotal').textContent=money(allOpen.filter(x=>x.due_date<=monthly).reduce((v,x)=>v+Number(x.amount),0));
  el('billSoonCount').textContent=String(allOpen.filter(x=>x.due_date>=today&&x.due_date<=soon).length);
@@ -1215,14 +1215,7 @@ function renderOtherBills(today,soon){
  }
  if(relevant.length>12)list.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Mais '+(relevant.length-12)+' prestações. Use “Ver todas as parcelas” para consultar o histórico completo.'}));
  const cards=el('billCardList');cards.replaceChildren();
- const statements=new Map();
- for(const x of cardCharges){
-  if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;
-  const key=x.card+'|'+x.statement_due;
-  const item=statements.get(key)||{card:x.card,date:x.statement_due,amount:0,count:0};
-  item.amount+=Number(x.amount);item.count+=1;statements.set(key,item);
- }
- const open=[...statements.values()].filter(x=>x.amount>0.005&&x.date<=next30).sort((a,b)=>a.date.localeCompare(b.date));
+ const open=cardOpenStatements().filter(x=>x.date<=next30).sort((a,b)=>a.date.localeCompare(b.date));
  if(!open.length)billEmpty(cards,'Nenhuma fatura vencida ou com vencimento nos próximos 30 dias.');
  for(const x of open.slice(0,8)){
   billEntry(cards,'Cartão '+(x.card==='nubank'?'Nubank':'Santander')+' · '+money(x.amount),'Vence '+billBrazilDate(x.date)+' · '+x.count+' compra(s)',billTag({status:'planned',due_date:x.date},today,soon),
@@ -1230,14 +1223,37 @@ function renderOtherBills(today,soon){
  }
  if(open.length>8)cards.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Mais '+(open.length-8)+' faturas. Abra a seção Cartões.'}));
 }
-function allDueBillsForAlerts(){
- const other=installmentRows().filter(x=>x.status==='planned'&&!billIsAccount(x));
+/* Uma única origem de verdade para todos os compromissos não quitados:
+   parcelas (incluindo contas recorrentes), compras parceladas e faturas.
+   A fatura entra apenas como SALDO, sem somar cada compra novamente. */
+function cardOpenStatements(){
  const statements=new Map();
- for(const x of cardCharges){
-  if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;
-  const key=x.card+'|'+x.statement_due;statements.set(key,{due_date:x.statement_due,status:'planned'});
+ for(const charge of cardCharges){
+  if(!charge.card||!charge.statement_due)continue;
+  const key=charge.card+'|'+charge.statement_due;
+  const item=statements.get(key)||{card:charge.card,date:charge.statement_due,amount:0,count:0};
+  item.amount+=Number(charge.amount)||0;
+  item.count++;
+  statements.set(key,item);
  }
- return [...billAccountRows.filter(x=>x.status==='planned'),...other,...statements.values()];
+ for(const payment of cardPayments){
+  const item=statements.get(payment.card+'|'+payment.statement_due);
+  if(item)item.amount-=Number(payment.amount)||0;
+ }
+ return [...statements.values()].map(x=>({...x,amount:Math.round(Math.max(0,x.amount)*100)/100}))
+  .filter(x=>x.amount>0.009);
+}
+function allDueBillsForAlerts(){
+ const open=installmentRows()
+  .filter(x=>x.status==='planned'&&x.due_date&&!(x.source==='bill'&&/^(santander-|nubank-)/i.test(x.origin_key||'')));
+ const scheduledIds=new Set(open.filter(x=>x.source==='bill').map(x=>x.id));
+ for(const x of billAccountRows){
+  if(x.status==='planned'&&!scheduledIds.has(x.id)){open.push({...x,source:'bill'});scheduledIds.add(x.id)}
+ }
+ for(const x of cardOpenStatements()){
+  open.push({source:'statement',card:x.card,description:'Fatura '+x.card,amount:x.amount,due_date:x.date,status:'planned'});
+ }
+ return open;
 }
 async function loadBillPage(){
  const {data,error}=await db.from('scheduled_bills')

@@ -895,72 +895,253 @@ el('period').addEventListener('change',()=>{el('dashboardMonthWrap').hidden=el('
 
 
 /* Contas por foto: usa o mesmo leitor de comprovantes dos gastos. */
+
 let selectedBillPhoto=null;
-el('billDueDate').value=localToday();
+let billAccountRows=[];
+let editingBillId=null;
+const billIsAccount=x=>/^family-account-(once|monthly)-/.test(x.origin_key||'');
+function billBrazilDate(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return '—';return date.split('-').reverse().join('/')}
+function billShiftDays(date,days){
+ const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);
+}
+function billValidISO(date){
+ if(typeof date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
+ const d=new Date(date+'T12:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===date;
+}
+function billTag(x,today,alertEnd){
+ const elTag=document.createElement('span');elTag.className='billDueTag';
+ if(x.status==='paid'){elTag.classList.add('paid');elTag.textContent='Paga'}
+ else if(x.due_date<today){elTag.classList.add('late');elTag.textContent='Atrasada'}
+ else if(x.due_date<=alertEnd){elTag.classList.add('soon');elTag.textContent='Vencendo'}
+ else{elTag.textContent='Prevista'}
+ return elTag;
+}
+function billEmpty(target,message){
+ const elEmpty=document.createElement('div');elEmpty.className='billEmpty';elEmpty.textContent=message;target.append(elEmpty);
+}
+function billEntry(target,title,details,tag,actions){
+ const row=document.createElement('div');row.className='billEntry';
+ const info=document.createElement('div');info.className='billEntryInfo';
+ const name=document.createElement('strong');name.textContent=title;
+ const meta=document.createElement('small');meta.textContent=details;
+ if(tag)meta.append(' ',tag);
+ info.append(name,meta);
+ row.append(info);
+ if(actions?.length){
+  const controls=document.createElement('div');controls.className='billEntryActions';
+  for(const action of actions)controls.append(action);
+  row.append(controls);
+ }
+ target.append(row);return row;
+}
+function billActionButton(label,click){
+ const button=document.createElement('button');button.type='button';button.className='planSecondary';button.textContent=label;button.addEventListener('click',click);return button;
+}
+function resetBillEditor(){
+ editingBillId=null;
+ el('billForm').reset();
+ el('billFormTitle').textContent='Cadastrar conta a pagar';
+ el('billSave').textContent='Salvar conta a pagar';
+ el('billCancelEdit').hidden=true;
+ el('billFrequency').disabled=false;
+ el('billRepeatHint').textContent='Para contas mensais serão previstos os próximos 12 vencimentos, com o mesmo valor estimado. Você poderá ajustar cada conta quando a fatura chegar.';
+ el('billDueDate').value='';
+ selectedBillPhoto=null;
+ el('billPhoto').value='';
+ el('billPreview').hidden=true;
+ el('billPreview').removeAttribute('src');
+ el('billReadPhoto').disabled=true;
+}
+function editBill(x){
+ if(x.status!=='planned')return notify('Esta conta já foi quitada e não pode ser editada como previsão.');
+ editingBillId=x.id;
+ el('billFormTitle').textContent='Editar esta conta a pagar';
+ el('billDescription').value=x.description;
+ el('billAmount').value=Number(x.amount).toFixed(2);
+ el('billDueDate').value=x.due_date;
+ el('billGroup').value=[...el('billGroup').options].some(o=>o.value===x.category_label)?x.category_label:'Outros';
+ el('billFrequency').value='once';
+ el('billFrequency').disabled=true;
+ el('billSave').textContent='Salvar alteração';
+ el('billCancelEdit').hidden=false;
+ el('billRepeatHint').textContent='A alteração modifica somente este vencimento. As outras contas mensais e parcelas permanecem intactas.';
+ el('billForm').scrollIntoView({behavior:'smooth',block:'start'});
+ el('billDescription').focus({preventScroll:true});
+}
+function renderBillPage(){
+ const today=localToday(),days=Math.max(1,Math.min(30,Number(familyAlertSettings.due_days)||5));
+ const soon=billShiftDays(today,days),monthly=billShiftDays(today,30),allOpen=billAccountRows.filter(x=>x.status==='planned');
+ el('billSoonTitle').textContent='Próximos vencimentos ('+days+' dias)';
+ el('billOpenTotal').textContent=money(allOpen.filter(x=>x.due_date<=monthly).reduce((v,x)=>v+Number(x.amount),0));
+ el('billSoonCount').textContent=String(allOpen.filter(x=>x.due_date>=today&&x.due_date<=soon).length);
+ el('billLateCount').textContent=String(allOpen.filter(x=>x.due_date<today).length);
+ const filter=el('billFilter').value,group=el('billGroupFilter').value,term=el('billSearch').value.trim().toLocaleLowerCase('pt-BR');
+ const visible=billAccountRows.filter(x=>{
+  const matchesGroup=group==='all'||x.category_label===group;
+  const matchesText=(x.description||'').toLocaleLowerCase('pt-BR').includes(term);
+  const matchesStatus=filter==='all'||(filter==='paid'?x.status==='paid':
+   filter==='late'?x.status==='planned'&&x.due_date<today:
+   filter==='soon'?x.status==='planned'&&x.due_date>=today&&x.due_date<=soon:x.status==='planned');
+  return matchesGroup&&matchesText&&matchesStatus;
+ });
+ const list=el('billList');list.replaceChildren();
+ if(!visible.length)billEmpty(list,'Nenhuma conta encontrada para este filtro. Use “Cadastrar conta a pagar” para adicionar uma.');
+ let previousMonth='';
+ for(const x of visible.slice(0,150)){
+  const month=x.due_date.slice(0,7);
+  if(month!==previousMonth){
+   const header=document.createElement('h4');header.className='billGroupHeader';
+   header.textContent=new Date(month+'-02T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+   list.append(header);previousMonth=month;
+  }
+  const actions=[];
+  if(x.status==='planned'){
+   actions.push(billActionButton('Pagar',()=>markInstallmentPaid({...x,source:'bill'})));
+   actions.push(billActionButton('Editar',()=>editBill(x)));
+  }
+  const total=x.status==='paid'?Number(x.amount_paid??x.amount):Number(x.amount);
+  billEntry(list,x.description+' · '+money(total),(x.category_label||'Outros')+' · Vencimento '+billBrazilDate(x.due_date)+(x.installment_total>1?' · Mês '+x.installment_number+'/'+x.installment_total:''),billTag(x,today,soon),actions);
+ }
+ if(visible.length>150)list.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Exibindo os primeiros 150 de '+visible.length+' vencimentos. Refine os filtros.'}));
+ renderOtherBills(today,soon);
+}
+function renderOtherBills(today,soon){
+ const next30=billShiftDays(today,30),list=el('billInstallmentList');
+ list.replaceChildren();
+ const other=installmentRows().filter(x=>x.status==='planned'&&!billIsAccount(x))
+  .sort((a,b)=>a.due_date.localeCompare(b.due_date));
+ const relevant=other.filter(x=>x.due_date<=next30);
+ el('billInstallmentSummary').textContent=
+  relevant.length+' prestação(ões) vencidas ou previstas para os próximos 30 dias · '+money(relevant.reduce((s,x)=>s+Number(x.amount),0))+' em aberto.';
+ if(!relevant.length)billEmpty(list,'Nenhuma prestação vencida ou com vencimento nos próximos 30 dias.');
+ for(const x of relevant.slice(0,12)){
+  const title=x.description+' · '+money(x.amount);
+  const installment=x.installment_total&&x.installment_number?' · Parcela '+x.installment_number+'/'+x.installment_total:'';
+  billEntry(list,title,installmentBucket(x)+' · '+billBrazilDate(x.due_date)+installment,billTag(x,today,soon),
+   [billActionButton('Pagar',()=>markInstallmentPaid(x))]);
+ }
+ if(relevant.length>12)list.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Mais '+(relevant.length-12)+' prestações. Clique em “Ver todas”.'}));
+ const cards=el('billCardList');cards.replaceChildren();
+ const statements=new Map();
+ for(const x of cardCharges){
+  if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;
+  const key=x.card+'|'+x.statement_due;
+  const item=statements.get(key)||{card:x.card,date:x.statement_due,amount:0,count:0};
+  item.amount+=Number(x.amount);item.count+=1;statements.set(key,item);
+ }
+ const open=[...statements.values()].filter(x=>x.amount>0.005&&x.date<=next30).sort((a,b)=>a.date.localeCompare(b.date));
+ if(!open.length)billEmpty(cards,'Nenhuma fatura vencida ou com vencimento nos próximos 30 dias.');
+ for(const x of open.slice(0,8)){
+  billEntry(cards,'Cartão '+(x.card==='nubank'?'Nubank':'Santander')+' · '+money(x.amount),'Vence '+billBrazilDate(x.date)+' · '+x.count+' compra(s)',billTag({status:'planned',due_date:x.date},today,soon),
+   [billActionButton('Ver fatura',()=>{switchView('cards');loadCards()})]);
+ }
+ if(open.length>8)cards.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Mais '+(open.length-8)+' faturas. Abra a seção Cartões.'}));
+ const upcoming=allDueBillsForAlerts().filter(x=>x.due_date<=soon&&x.status==='planned');
+ const late=upcoming.filter(x=>x.due_date<today).length;
+ const approaching=upcoming.length-late;
+ const text=el('billAlertsText');
+ if(!familyAlertSettings.enabled)text.textContent='Os alertas estão desativados nas configurações. Ative-os para ver e receber avisos.';
+ else if(!upcoming.length)text.textContent='Nenhuma conta, parcela ou fatura vencida ou próxima do vencimento.';
+ else text.textContent=(late?late+' compromisso(s) atrasado(s). ':'')+(approaching?approaching+' vencimento(s) nos próximos '+Math.max(1,Number(familyAlertSettings.due_days)||5)+' dias.':'');
+}
+function allDueBillsForAlerts(){
+ const other=installmentRows().filter(x=>x.status==='planned'&&!billIsAccount(x));
+ const statements=new Map();
+ for(const x of cardCharges){
+  if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;
+  const key=x.card+'|'+x.statement_due;statements.set(key,{due_date:x.statement_due,status:'planned'});
+ }
+ return [...billAccountRows.filter(x=>x.status==='planned'),...other,...statements.values()];
+}
+async function loadBillPage(){
+ const {data,error}=await db.from('scheduled_bills')
+  .select('id,description,amount,due_date,status,origin_key,category_label,installment_number,installment_total,owner_id,paid_at,amount_paid')
+  .order('due_date',{ascending:true}).limit(2000);
+ if(error){notify('Falha ao carregar contas: '+error.message);return}
+ billAccountRows=(data||[]).filter(billIsAccount);
+ renderBillPage();
+}
+el('billFilter').addEventListener('change',renderBillPage);
+el('billGroupFilter').addEventListener('change',renderBillPage);
+el('billSearch').addEventListener('input',renderBillPage);
+el('billCancelEdit').addEventListener('click',resetBillEditor);
+el('billFrequency').addEventListener('change',()=>{
+ if(editingBillId)return;
+ el('billRepeatHint').textContent=el('billFrequency').value==='monthly'
+  ?'Serão criados 12 vencimentos mensais estimados; você pode editar cada cobrança quando receber a fatura.'
+  :'Será criado apenas um vencimento.';
+});
+el('billGoInstallments').addEventListener('click',async()=>{switchView('installments');await loadInstallments()});
+el('billGoCards').addEventListener('click',async()=>{switchView('cards');await loadCards()});
+el('billOpenNotifications').addEventListener('click',async()=>{
+ el('alertsOverlay').hidden=false;
+ await refreshPlanning();
+ await updatePushStatus();
+});
 el('billPhoto').addEventListener('change',e=>{
  selectedBillPhoto=e.target.files?.[0]||null;
  el('billReadPhoto').disabled=!selectedBillPhoto;
  el('billPreview').hidden=!selectedBillPhoto;
- if(selectedBillPhoto){const url=URL.createObjectURL(selectedBillPhoto);el('billPreview').src=url;el('billPreview').onload=()=>URL.revokeObjectURL(url)}
+ if(selectedBillPhoto){
+  if(!editingBillId)el('billDueDate').value='';
+  const url=URL.createObjectURL(selectedBillPhoto);
+  el('billPreview').src=url;
+  el('billPreview').onload=()=>URL.revokeObjectURL(url);
+ }
 });
 el('billReadPhoto').addEventListener('click',async()=>{
  if(!selectedBillPhoto)return;
- const btn=el('billReadPhoto');btn.disabled=true;btn.textContent='Lendo foto...';
+ const btn=el('billReadPhoto');btn.disabled=true;btn.textContent='Lendo a conta...';
  try{
   const image=await photoToJpeg(selectedBillPhoto);
-  const {data,error}=await db.functions.invoke('analyze-receipt',{body:{image}});
-  if(error)throw error;if(data?.error)throw Error(data.error);
+  const {data,error}=await db.functions.invoke('analyze-receipt',{body:{image,document_type:'bill'}});
+  if(error)throw error;
+  if(data?.error)throw Error(data.error);
   if(data?.description)el('billDescription').value=data.description;
   if(Number(data?.amount)>0)el('billAmount').value=data.amount;
-  const date=[data?.due_date,data?.dueDate,data?.payment_due_date,data?.date].find(v=>/^\d{4}-\d{2}-\d{2}$/.test(v||''));
-  if(date)el('billDueDate').value=date;
-  notify('Foto analisada. Confira a descrição, o valor e principalmente o vencimento antes de salvar.');
- }catch(err){notify('Leitura não concluída: '+err.message+'. Preencha os dados manualmente.')}
+  if(billValidISO(data?.due_date))el('billDueDate').value=data.due_date;
+  if(['Casa','Carro','Panela','Outros'].includes(data?.group))el('billGroup').value=data.group;
+  notify(billValidISO(data?.due_date)
+   ?'Foto lida. Confira descrição, valor e vencimento antes de salvar.'
+   :'Foto lida, mas o vencimento não foi identificado com segurança. Informe-o manualmente antes de salvar.');
+ }catch(err){notify('Não foi possível ler a foto: '+err.message+'. Você pode preencher os dados manualmente.')}
  finally{btn.disabled=false;btn.textContent='Ler foto com IA'}
 });
-const billIsAccount=x=>/^family-account-(once|monthly)-/.test(x.origin_key||'');
-async function loadBillPage(){
- const {data,error}=await db.from('scheduled_bills').select('id,description,amount,due_date,status,origin_key,category_label,installment_number,installment_total,owner_id').order('due_date',{ascending:true}).limit(2000);
- if(error){notify('Falha ao carregar contas: '+error.message);return}
- const rows=(data||[]).filter(billIsAccount),today=localToday(),soon=new Date(today+'T12:00:00');soon.setDate(soon.getDate()+5);
- const soonDate=[soon.getFullYear(),String(soon.getMonth()+1).padStart(2,'0'),String(soon.getDate()).padStart(2,'0')].join('-');
- const open=rows.filter(x=>x.status!=='paid');
- el('billOpenTotal').textContent=money(open.reduce((a,x)=>a+Number(x.amount),0));
- el('billSoonCount').textContent=String(open.filter(x=>x.due_date>=today&&x.due_date<=soonDate).length);
- el('billLateCount').textContent=String(open.filter(x=>x.due_date<today).length);
- const filter=el('billFilter').value,list=el('billList');list.replaceChildren();
- const visible=rows.filter(x=>filter==='all'||(filter==='paid'?x.status==='paid':x.status!=='paid'));
- if(!visible.length){const p=document.createElement('p');p.className='foot';p.textContent='Nenhuma conta nesta seleção.';list.append(p)}
- for(const x of visible.slice(0,150)){
-  const row=document.createElement('div');row.className='planRow billAction';
-  const info=document.createElement('div');const name=document.createElement('strong');name.textContent=x.description+' · '+money(x.amount);
-  const details=document.createElement('small');details.textContent=(x.category_label||'Outros')+' · Vence '+x.due_date+(x.status==='paid'?' · Paga':x.due_date<today?' · Atrasada':' · Em aberto');
-  info.append(name,details);row.append(info);
-  if(x.status!=='paid'){
-   const btn=document.createElement('button');btn.className='planSecondary';btn.textContent='Quitar';btn.onclick=()=>markInstallmentPaid({...x,source:'bill'});row.append(btn);
-  }
-  list.append(row);
- }
-}
-el('billFilter').addEventListener('change',loadBillPage);
 el('billForm').addEventListener('submit',async e=>{
  e.preventDefault();
- const description=el('billDescription').value.trim(),amount=Number(el('billAmount').value),due=el('billDueDate').value,group=el('billGroup').value,monthly=el('billFrequency').value==='monthly';
- if(!description||!Number.isFinite(amount)||amount<=0||!/^\d{4}-\d{2}-\d{2}$/.test(due)){notify('Confira nome, valor e vencimento.');return}
+ const description=el('billDescription').value.trim().replace(/\s+/g,' '),
+  amount=Number(el('billAmount').value),due=el('billDueDate').value,
+  group=el('billGroup').value,monthly=el('billFrequency').value==='monthly';
+ if(description.length<2||description.length>200||!Number.isFinite(amount)||amount<=0||amount>99999999
+  ||Math.round(amount*100)!==amount*100&&Math.abs(Math.round(amount*100)-amount*100)>0.00001
+  ||!billValidISO(due)||!['Casa','Carro','Panela','Saúde','Educação','Assinaturas','Outros'].includes(group)){
+  notify('Confira nome, valor, grupo e a data válida de vencimento.');return;
+ }
  const btn=el('billSave');btn.disabled=true;
  try{
   const {data:{user},error:authError}=await db.auth.getUser();if(authError||!user)throw Error('Faça login novamente.');
-  const key='family-account-'+(monthly?'monthly':'once')+'-'+crypto.randomUUID();
-  const months=monthly?12:1;
-  const records=Array.from({length:months},(_,i)=>({
-   owner_id:user.id,description,amount,due_date:nextMonthDate(due,i),status:'planned',category_label:group,
-   installment_number:i+1,installment_total:months,origin_key:key+'-'+String(i+1).padStart(2,'0')
-  }));
-  const {error}=await db.from('scheduled_bills').insert(records);if(error)throw error;
-  e.target.reset();selectedBillPhoto=null;el('billPreview').hidden=true;el('billReadPhoto').disabled=true;el('billDueDate').value=localToday();
-  notify(monthly?'Conta mensal salva com os próximos 12 vencimentos.':'Conta salva com sucesso.');
-  await loadBillPage();await loadInstallments();
- }catch(err){notify('Não foi possível cadastrar: '+err.message)}
+  if(editingBillId){
+   const current=billAccountRows.find(x=>x.id===editingBillId);
+   if(!current||current.status!=='planned')throw Error('Esta conta não pode mais ser alterada.');
+   const {data,error}=await db.from('scheduled_bills').update({description,amount,due_date:due,category_label:group})
+    .eq('id',editingBillId).eq('status','planned').select('id');
+   if(error)throw error;
+   if(!data?.length)throw Error('Conta não encontrada ou já paga.');
+   notify('Conta atualizada. Os demais vencimentos foram preservados.');
+  }else{
+   const key='family-account-'+(monthly?'monthly':'once')+'-'+crypto.randomUUID();
+   const months=monthly?12:1;
+   const records=Array.from({length:months},(_,i)=>({
+    owner_id:user.id,description,amount,due_date:nextMonthDate(due,i),status:'planned',category_label:group,
+    installment_number:i+1,installment_total:months,origin_key:key+'-'+String(i+1).padStart(2,'0')
+   }));
+   const {error}=await db.from('scheduled_bills').insert(records);if(error)throw error;
+   notify(monthly?'Conta mensal salva com 12 vencimentos previstos.':'Conta a pagar salva com sucesso.');
+  }
+  resetBillEditor();
+  await loadInstallments();
+  await loadBillPage();
+ }catch(err){notify('Não foi possível salvar a conta: '+(err.message||err))}
  finally{btn.disabled=false}
 });
 

@@ -1144,7 +1144,7 @@ el('billForm').addEventListener('submit',async e=>{
   resetBillEditor();
   await loadInstallments();
   await loadBillPage();await loadDashboard();
- }catch(err){notify('Não foi possível salvar a conta: +(err.message||err))}
+ }catch(err){notify('Não foi possível salvar a conta: '+(err.message||err))}
  finally{btn.disabled=false}
 });
 

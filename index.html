@@ -638,7 +638,7 @@ function money(value){return Number(value||0).toLocaleString('pt-BR',{style:'cur
 function switchView(name){el('dashboard').hidden=name!=='dashboard';el('launch').hidden=name!=='launch';el('history').hidden=name!=='history';el('installmentsPage').hidden=name!=='installments';el('billsPage').hidden=name!=='bills';el('cardsPage').hidden=name!=='cards';el('planningHub').hidden=name!=='planning';el('navDashboard').classList.toggle('active',name==='dashboard');el('navLaunch').classList.toggle('active',name==='launch');el('navHistory').classList.toggle('active',name==='history');el('navInstallments').classList.toggle('active',name==='installments');el('navBills').classList.toggle('active',name==='bills');el('navCards').classList.toggle('active',name==='cards');el('navPlanning').classList.toggle('active',name==='planning')}
 el('navDashboard').onclick=()=>{switchView('dashboard');loadDashboard()};
 el('navLaunch').onclick=()=>switchView('launch');
-el('navBills').onclick=async()=>{switchView('bills');await loadBillPage()};el('navHistory').onclick=()=>{switchView('history');loadHistory()};el('navInstallments').onclick=()=>{switchView('installments');loadInstallments()};el('navCards').onclick=()=>{switchView('cards');loadCards()};el('navPlanning').onclick=async()=>{switchView('planning');window.scrollTo({top:0,behavior:'smooth'});await loadInstallments();await loadCards();await refreshPlanning()};el('installmentsSearch').addEventListener('input',drawInstallments);
+el('navBills').onclick=async()=>{switchView('bills');await loadInstallments();await loadCards();const {data}=await db.from('family_alert_settings').select('*').maybeSingle();if(data)familyAlertSettings=data;await loadBillPage()};el('navHistory').onclick=()=>{switchView('history');loadHistory()};el('navInstallments').onclick=()=>{switchView('installments');loadInstallments()};el('navCards').onclick=()=>{switchView('cards');loadCards()};el('navPlanning').onclick=async()=>{switchView('planning');window.scrollTo({top:0,behavior:'smooth'});await loadInstallments();await loadCards();await refreshPlanning()};el('installmentsSearch').addEventListener('input',drawInstallments);
 el('historySearch').addEventListener('input',drawHistory);for(const id of ['historyPeriod','historyCategory','historyPayment','historyUser','historyStatus'])el(id).addEventListener('change',drawHistory);
 el('period').onchange=()=>loadDashboard();
 el('payment').addEventListener('change',()=>{const card=!!cardInfo[el('payment').value];el('cardInfo').hidden=!card;el('dateLabel').firstChild.textContent=card?'Data da compra':'Data do pagamento'});
@@ -756,7 +756,8 @@ function markInstallmentPaid(x){
  el('payDetails').textContent='Parcela '+(x.installment_number||'')+'/'+(x.installment_total||'')+' · Vencimento '+x.due_date+' · Valor original '+money(x.amount);
  el('payAmount').value=Number(x.amount).toFixed(2);el('payMethod').value='';
  const group=installmentBucket(x);
- el('payCategory').value=x.category_label||(group==='Carro'?'Veículo':group==='Casa'?'Moradia':group==='Panela Royal Prestige'?'Contas da casa':'Compras');
+ const defaultCategory=({Casa:'Contas da casa',Carro:'Veículo',Panela:'Compras',Saúde:'Saúde',Educação:'Educação',Assinaturas:'Assinaturas',Outros:'Outros'})[x.bill_group||x.category_label]||x.category_label||(group==='Carro'?'Veículo':group==='Casa'?'Moradia':group==='Panela Royal Prestige'?'Contas da casa':'Compras');
+ el('payCategory').value=[...el('payCategory').options].some(o=>o.value===defaultCategory)?defaultCategory:'Outros';
  updatePayInterest();el('payOverlay').hidden=false;el('payAmount').focus();
 }
 function updatePayInterest(){if(!activePayment)return;el('payInterest').textContent=money(Math.max(0,Number(el('payAmount').value||0)-Number(activePayment.amount)))}
@@ -767,7 +768,8 @@ el('payOverlay').addEventListener('click',e=>{if(e.target===el('payOverlay'))clo
 el('payForm').addEventListener('submit',async e=>{
  e.preventDefault();const x=activePayment;if(!x)return;
  const actual=Number(el('payAmount').value),original=Number(x.amount),category=el('payCategory').value,paymentMethod=el('payMethod').value;
- if(!Number.isFinite(actual)||actual<original||!category||!paymentMethod){notify('Confira o valor, a categoria e a forma de pagamento. Pagamento integral não pode ser inferior à parcela.');return}
+ const isAccountBill=x.source==='bill'&&billIsAccount(x);
+ if(!Number.isFinite(actual)||actual<=0||(!isAccountBill&&actual<original)||!category||!paymentMethod){notify('Confira o valor, a categoria e a forma de pagamento. Parcelas de financiamentos não podem ser pagas abaixo do valor previsto.');return}
  const interest=Math.round((actual-original)*100)/100,button=el('confirmPay');button.disabled=true;
  try{
  const paid_at=new Date().toISOString();
@@ -775,7 +777,7 @@ el('payForm').addEventListener('submit',async e=>{
  if(x.source==='bill')result=await db.from('scheduled_bills').update({status:'paid',paid_at,amount_paid:actual,interest_paid:interest,category_label:category,payment_method:paymentMethod}).eq('id',x.id).eq('status','planned').select('id');
  else result=await db.from('transactions').update({status:'paid',paid_at,installment_amount_paid:actual,installment_interest_paid:interest,category_label:category,payment_method:paymentMethod,due_date:localToday()}).eq('id',x.id).eq('status','planned').select('id');
  if(result.error||!result.data?.length){notify(result.error?.message||'Parcela já quitada ou indisponível.');return}
- closePay();notify('Parcela quitada: '+money(actual)+' · '+category+' · '+paymentMethod+' · juros '+money(interest));await loadDashboard();await loadHistory();
+ closePay();notify((isAccountBill?'Conta':'Parcela')+' quitada: '+money(actual)+' · '+category+' · '+paymentMethod+(interest>0?' · juros '+money(interest):actual<original?' · abaixo do valor previsto':''));await loadDashboard();await loadHistory();if(!el('billsPage').hidden)await loadBillPage();
  }catch(err){notify('Não foi possível registrar: '+err.message)}finally{button.disabled=false}
 });
 function makeInstallmentLine(x){
@@ -900,6 +902,7 @@ let selectedBillPhoto=null;
 let billAccountRows=[];
 let editingBillId=null;
 const billIsAccount=x=>/^family-account-(once|monthly)-/.test(x.origin_key||'');
+function billDefaultCategory(group){return ({Casa:'Contas da casa',Carro:'Veículo',Panela:'Compras',Saúde:'Saúde',Educação:'Educação',Assinaturas:'Assinaturas',Outros:'Outros'})[group]||'Outros'}
 function billBrazilDate(date){if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return '—';return date.split('-').reverse().join('/')}
 function billShiftDays(date,days){
  const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);
@@ -959,7 +962,7 @@ function editBill(x){
  el('billDescription').value=x.description;
  el('billAmount').value=Number(x.amount).toFixed(2);
  el('billDueDate').value=x.due_date;
- el('billGroup').value=[...el('billGroup').options].some(o=>o.value===x.category_label)?x.category_label:'Outros';
+ el('billGroup').value=[...el('billGroup').options].some(o=>o.value===(x.bill_group||x.category_label))?(x.bill_group||x.category_label):'Outros';
  el('billFrequency').value='once';
  el('billFrequency').disabled=true;
  el('billSave').textContent='Salvar alteração';
@@ -977,7 +980,7 @@ function renderBillPage(){
  el('billLateCount').textContent=String(allOpen.filter(x=>x.due_date<today).length);
  const filter=el('billFilter').value,group=el('billGroupFilter').value,term=el('billSearch').value.trim().toLocaleLowerCase('pt-BR');
  const visible=billAccountRows.filter(x=>{
-  const matchesGroup=group==='all'||x.category_label===group;
+  const matchesGroup=group==='all'||(x.bill_group||x.category_label)===group;
   const matchesText=(x.description||'').toLocaleLowerCase('pt-BR').includes(term);
   const matchesStatus=filter==='all'||(filter==='paid'?x.status==='paid':
    filter==='late'?x.status==='planned'&&x.due_date<today:
@@ -1000,7 +1003,7 @@ function renderBillPage(){
    actions.push(billActionButton('Editar',()=>editBill(x)));
   }
   const total=x.status==='paid'?Number(x.amount_paid??x.amount):Number(x.amount);
-  billEntry(list,x.description+' · '+money(total),(x.category_label||'Outros')+' · Vencimento '+billBrazilDate(x.due_date)+(x.installment_total>1?' · Mês '+x.installment_number+'/'+x.installment_total:''),billTag(x,today,soon),actions);
+  billEntry(list,x.description+' · '+money(total),(x.bill_group||x.category_label||'Outros')+' · Vencimento '+billBrazilDate(x.due_date)+(x.installment_total>1?' · Mês '+x.installment_number+'/'+x.installment_total:''),billTag(x,today,soon),actions);
  }
  if(visible.length>150)list.append(Object.assign(document.createElement('p'),{className:'foot',textContent:'Exibindo os primeiros 150 de '+visible.length+' vencimentos. Refine os filtros.'}));
  renderOtherBills(today,soon);
@@ -1055,7 +1058,7 @@ function allDueBillsForAlerts(){
 }
 async function loadBillPage(){
  const {data,error}=await db.from('scheduled_bills')
-  .select('id,description,amount,due_date,status,origin_key,category_label,installment_number,installment_total,owner_id,paid_at,amount_paid')
+  .select('id,description,amount,due_date,status,origin_key,category_label,bill_group,installment_number,installment_total,owner_id,paid_at,amount_paid')
   .order('due_date',{ascending:true}).limit(2000);
  if(error){notify('Falha ao carregar contas: '+error.message);return}
  billAccountRows=(data||[]).filter(billIsAccount);
@@ -1123,7 +1126,7 @@ el('billForm').addEventListener('submit',async e=>{
   if(editingBillId){
    const current=billAccountRows.find(x=>x.id===editingBillId);
    if(!current||current.status!=='planned')throw Error('Esta conta não pode mais ser alterada.');
-   const {data,error}=await db.from('scheduled_bills').update({description,amount,due_date:due,category_label:group})
+   const {data,error}=await db.from('scheduled_bills').update({description,amount,due_date:due,bill_group:group,category_label:billDefaultCategory(group)})
     .eq('id',editingBillId).eq('status','planned').select('id');
    if(error)throw error;
    if(!data?.length)throw Error('Conta não encontrada ou já paga.');
@@ -1132,7 +1135,7 @@ el('billForm').addEventListener('submit',async e=>{
    const key='family-account-'+(monthly?'monthly':'once')+'-'+crypto.randomUUID();
    const months=monthly?12:1;
    const records=Array.from({length:months},(_,i)=>({
-    owner_id:user.id,description,amount,due_date:nextMonthDate(due,i),status:'planned',category_label:group,
+    owner_id:user.id,description,amount,due_date:nextMonthDate(due,i),status:'planned',bill_group:group,category_label:billDefaultCategory(group),
     installment_number:i+1,installment_total:months,origin_key:key+'-'+String(i+1).padStart(2,'0')
    }));
    const {error}=await db.from('scheduled_bills').insert(records);if(error)throw error;
@@ -1140,8 +1143,8 @@ el('billForm').addEventListener('submit',async e=>{
   }
   resetBillEditor();
   await loadInstallments();
-  await loadBillPage();
- }catch(err){notify('Não foi possível salvar a conta: '+(err.message||err))}
+  await loadBillPage();await loadDashboard();
+ }catch(err){notify('Não foi possível salvar a conta: +(err.message||err))}
  finally{btn.disabled=false}
 });
 

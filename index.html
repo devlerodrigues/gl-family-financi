@@ -304,10 +304,11 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 <div class="card billHero">
  <div class="billHeroHead"><div><h2>Contas a pagar</h2><p>Casa, carro, panela, água, luz e demais compromissos organizados por vencimento. Inclui acesso às compras parceladas e faturas.</p></div><span class="billHeroIcon" aria-hidden="true">🗓️</span></div>
  <div class="billStats">
-  <div class="metric"><small>Contas em aberto (até 30 dias e atrasadas)</small><strong id="billOpenTotal">R$ 0,00</strong></div>
+  <div class="metric"><small>Total em aberto (até 30 dias e atrasados)</small><strong id="billOpenTotal">R$ 0,00</strong></div>
   <div class="metric"><small id="billSoonTitle">Próximos vencimentos (5 dias)</small><strong id="billSoonCount">0</strong></div>
-  <div class="metric"><small>Contas vencidas</small><strong id="billLateCount">0</strong></div>
+  <div class="metric"><small>Compromissos vencidos</small><strong id="billLateCount">0</strong></div>
  </div>
+ <p id="billOverviewBreakdown" class="foot" style="margin:0 0 4px" aria-live="polite">Separando prestações e faturas em aberto...</p>
  
 </div>
 <div class="card billEditorCard">
@@ -1164,8 +1165,12 @@ function editBill(x){
 function renderBillPage(){
  const today=localToday(),days=Math.max(1,Math.min(30,Number(familyAlertSettings.due_days)||5));
  const soon=billShiftDays(today,days),monthly=billShiftDays(today,30),allOpen=allDueBillsForAlerts();
+ const inWindow=allOpen.filter(x=>x.due_date<=monthly);
+ const installmentsTotal=inWindow.filter(x=>x.source!=='statement').reduce((v,x)=>v+Number(x.amount),0);
+ const statementTotal=inWindow.filter(x=>x.source==='statement').reduce((v,x)=>v+Number(x.amount),0);
+ el('billOverviewBreakdown').textContent='Contas e prestações: '+money(installmentsTotal)+' · Faturas de cartões: '+money(statementTotal);
  el('billSoonTitle').textContent='Próximos vencimentos ('+days+' dias)';
- el('billOpenTotal').textContent=money(allOpen.filter(x=>x.due_date<=monthly).reduce((v,x)=>v+Number(x.amount),0));
+ el('billOpenTotal').textContent=money(inWindow.reduce((v,x)=>v+Number(x.amount),0));
  el('billSoonCount').textContent=String(allOpen.filter(x=>x.due_date>=today&&x.due_date<=soon).length);
  el('billLateCount').textContent=String(allOpen.filter(x=>x.due_date<today).length);
  const filter=el('billFilter').value,group=el('billGroupFilter').value,term=el('billSearch').value.trim().toLocaleLowerCase('pt-BR');

@@ -372,9 +372,27 @@ let familyProfiles=[];
 function familyMemberName(id){return familyProfiles.find(x=>x.id===id)?.display_name||'Usuário da família'}
 async function loadFamilyProfiles(){const {data,error}=await db.from('family_user_profiles').select('id,email,display_name,role');if(!error){familyProfiles=data||[];const {data:{user}}=await db.auth.getUser();activeUserProfile=familyProfiles.find(x=>x.id===user?.id)||null;}}
 function closeAlertsPanel(){el('alertsOverlay').hidden=true}
-el('openAlertsPanel').addEventListener('click',async()=>{el('accountThemePanel').hidden=true;el('accountThemeToggle').setAttribute('aria-expanded','false');el('alertsOverlay').hidden=false;await refreshPlanning();await updatePushStatus()});
+async function openNotificationCenter(){
+ el('accountThemePanel').hidden=true;
+ el('accountThemeToggle').setAttribute('aria-expanded','false');
+ el('alertsOverlay').hidden=false;
+ el('notificationSummary').textContent='Atualizando vencimentos e orçamentos...';
+ try{
+  await Promise.all([loadInstallments(),loadCards()]);
+  await refreshPlanning();
+  await updatePushStatus();
+ }catch(err){notify('Não foi possível atualizar todos os avisos: '+(err.message||err))}
+}
+el('openAlertsPanel').addEventListener('click',openNotificationCenter);
+el('openNotificationCenter').addEventListener('click',openNotificationCenter);
+el('notificationRefresh').addEventListener('click',openNotificationCenter);
 el('closeAlertsPanel').addEventListener('click',closeAlertsPanel);
 el('alertsOverlay').addEventListener('click',e=>{if(e.target===el('alertsOverlay'))closeAlertsPanel()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!el('alertsOverlay').hidden)closeAlertsPanel()});
+document.querySelectorAll('[data-notification-filter]').forEach(button=>button.addEventListener('click',()=>{
+ notificationFilter=button.dataset.notificationFilter;
+ renderNotificationCenter();
+}));
 
 let currentWaLink=null;
 let waCodeMessage='';
@@ -555,7 +573,7 @@ async function refreshPlanning(){
  db.from('family_category_budgets').select('*').order('category'),
  db.from('family_savings_goals').select('*').order('created_at',{ascending:false}),
  db.from('family_alert_settings').select('*').maybeSingle(),
- db.from('transactions').select('owner_id,recorded_by,family_member_id,kind,status,amount,due_date,category_label').eq('kind','expense').order('due_date',{ascending:false}).limit(3000)
+ db.from('transactions').select('id,description,installment_group,owner_id,recorded_by,family_member_id,kind,status,amount,due_date,category_label').eq('kind','expense').order('due_date',{ascending:false}).limit(3000)
  ]);
  if(budgets.error||goals.error||transactions.error){notify('Não foi possível carregar planejamento: '+(budgets.error?.message||goals.error?.message||transactions.error?.message));return}
  familyBudgetRows=budgets.data||[];familyGoalRows=goals.data||[];planningTransactions=transactions.data||[];
@@ -601,23 +619,116 @@ function drawPlanning(){
  }
  drawPlanningAlerts(entries,month);
 }
+
+let notificationItems=[];
+let notificationFilter='all';
+function notificationDueDifference(due,today){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(due||''))return null;
+ const diff=Math.round((Date.parse(due+'T12:00:00Z')-Date.parse(today+'T12:00:00Z'))/86400000);
+ return Number.isFinite(diff)?diff:null;
+}
+function buildNotificationItems(entries,month){
+ const today=localToday(),days=Math.max(1,Math.min(30,Number(familyAlertSettings.due_days)||5));
+ if(!familyAlertSettings.enabled)return [];
+ const list=[],due=[];
+ for(const x of installmentBills.filter(x=>x.status!=='paid')){
+  due.push({key:'scheduled:'+x.id,date:x.due_date,amount:Number(x.amount),title:x.description||'Parcela prevista',
+   source:billIsAccount(x)?'Conta a pagar':'Parcela',destination:'bills'});
+ }
+ for(const x of planningTransactions.filter(x=>x.kind==='expense'&&x.status!=='paid')){
+  due.push({key:'transaction:'+x.id,date:x.due_date,amount:Number(x.amount),title:x.description||'Gasto previsto',
+   source:x.installment_group?'Parcela':'Despesa',destination:x.installment_group?'bills':'history'});
+ }
+ const cardBalances=new Map();
+ for(const x of cardCharges){
+  const key=x.card+'|'+x.statement_due;
+  const item=cardBalances.get(key)||{key:'card:'+key,date:x.statement_due,amount:0,title:x.card==='nubank'?'Nubank':x.card==='santander'?'Santander':x.card,source:'Fatura',destination:'cards'};
+  item.amount+=Number(x.amount);cardBalances.set(key,item);
+ }
+ for(const x of cardPayments){
+  const key=x.card+'|'+x.statement_due,item=cardBalances.get(key);
+  if(item)item.amount-=Number(x.amount);
+ }
+ due.push(...[...cardBalances.values()].filter(x=>x.amount>0.01));
+ for(const x of due){
+  const diff=notificationDueDifference(x.date,today);
+  if(diff===null||diff>days)continue;
+  const status=diff<0?'overdue':'upcoming';
+  list.push({...x,status,days:diff,
+   title:x.source+' · '+x.title,
+   detail:(diff<0?'Vencida há '+Math.abs(diff)+' dia(s)':diff===0?'Vence hoje':'Vence em '+diff+' dia(s)')
+    +' · '+billBrazilDate(x.date)+' · '+planMoney(x.amount)});
+ }
+ for(const b of familyBudgetRows.filter(x=>x.month===month)){
+  const used=entries.filter(x=>x.date?.slice(0,7)===month&&x.category===b.category).reduce((s,x)=>s+x.amount,0);
+  const pct=100*used/Number(b.amount);
+  if(!Number.isFinite(pct)||pct<familyAlertSettings.budget_threshold)continue;
+  list.push({key:'budget:'+b.category+':'+month,status:'budget',destination:'planning',
+   title:'Orçamento · '+b.category,days:9999,date:null,percent:pct,
+   detail:Math.round(pct)+'% do limite utilizado · '+planMoney(used)+' de '+planMoney(b.amount)});
+ }
+ const severity={overdue:0,upcoming:1,budget:2};
+ list.sort((x,y)=>{
+  if(severity[x.status]!==severity[y.status])return severity[x.status]-severity[y.status];
+  if(x.status==='overdue')return String(y.date).localeCompare(String(x.date));
+  if(x.status==='budget')return (y.percent||0)-(x.percent||0);
+  return String(x.date).localeCompare(String(y.date));
+ });
+ return list;
+}
 function drawPlanningAlerts(entries,month){
+ notificationItems=buildNotificationItems(entries,month);
+ renderNotificationCenter();
+}
+function renderNotificationCenter(){
+ const total=notificationItems.length,counts={
+  all:total,
+  overdue:notificationItems.filter(x=>x.status==='overdue').length,
+  upcoming:notificationItems.filter(x=>x.status==='upcoming').length,
+  budget:notificationItems.filter(x=>x.status==='budget').length
+ };
+ const count=el('notificationCount');
+ count.textContent=total>99?'99+':String(total);
+ count.hidden=!familyAlertSettings.enabled||!total;
+ el('notificationAllCount').textContent=counts.all>99?'99+':String(counts.all);
+ el('notificationLateCount').textContent=String(counts.overdue);
+ el('notificationSoonCount').textContent=String(counts.upcoming);
+ el('notificationBudgetCount').textContent=String(counts.budget);
+ el('notificationSummary').textContent=!familyAlertSettings.enabled?'Avisos desativados nas preferências':
+  total?counts.overdue+' atrasadas · '+counts.upcoming+' próximas · '+counts.budget+' orçamentos':
+  'Nenhuma pendência próxima do vencimento';
+ document.querySelectorAll('[data-notification-filter]').forEach(button=>{
+  const active=button.dataset.notificationFilter===notificationFilter;
+  button.classList.toggle('active',active);
+  button.setAttribute('aria-pressed',String(active));
+ });
  const target=el('alertsList');target.replaceChildren();
- if(!familyAlertSettings.enabled){planEmpty(target,'Alertas desativados neste aparelho/conta.');return}
- const today=localToday(),now=new Date(today+'T12:00:00'),days=familyAlertSettings.due_days,alerts=[];
- const dueItems=[
- ...installmentBills.filter(x=>x.status!=='paid').map(x=>({date:x.due_date,amount:Number(x.amount),label:x.description})),
- ...planningTransactions.filter(x=>x.kind==='expense'&&x.status!=='paid').map(x=>({date:x.due_date,amount:Number(x.amount),label:'Gasto previsto'}))
- ];
- const openStatements=new Map();
- for(const x of cardCharges){const key=x.card+'|'+x.statement_due;if(cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due))continue;const item=openStatements.get(key)||{date:x.statement_due,amount:0,label:'Fatura '+x.card};item.amount+=Number(x.amount);openStatements.set(key,item)}
- dueItems.push(...openStatements.values());
- for(const x of dueItems){if(!x.date)continue;const diff=Math.round((new Date(x.date+'T12:00:00')-now)/86400000);if(diff<0)alerts.push({urgent:true,days:diff,text:x.label+' · '+planMoney(x.amount)+' · vencido há '+Math.abs(diff)+' dia(s)'});else if(diff<=days)alerts.push({urgent:false,days:diff,text:x.label+' · '+planMoney(x.amount)+' · vence '+(diff===0?'hoje':'em '+diff+' dia(s)')})}
- for(const b of familyBudgetRows.filter(x=>x.month===month)){const spent=entries.filter(x=>x.date?.slice(0,7)===month&&x.category===b.category).reduce((s,x)=>s+x.amount,0),pct=spent/Number(b.amount)*100;if(pct>=familyAlertSettings.budget_threshold)alerts.push({urgent:pct>=100,days:999,text:'Orçamento '+b.category+': '+Math.round(pct)+'% utilizado ('+planMoney(spent)+' de '+planMoney(b.amount)+')'})}
- alerts.sort((a,b)=>a.days-b.days);
- if(!alerts.length)planEmpty(target,'Tudo em dia: nenhum vencimento próximo ou limite atingido.');
- for(const a of alerts.slice(0,12)){const box=planNode('div','planAlert'+(a.urgent?' urgent':''));box.append(planNode('strong','',a.urgent?'Atenção':'Aviso'),planNode('span','',a.text));target.append(box)}
- if(alerts.length>12)target.append(planNode('p','foot','Mais '+(alerts.length-12)+' alertas não exibidos.'));
+ if(!familyAlertSettings.enabled){
+  planEmpty(target,'Os avisos estão desativados. Abra “Preferências e avisos no celular” para ativá-los.');
+  return;
+ }
+ const visible=notificationItems.filter(x=>notificationFilter==='all'||x.status===notificationFilter);
+ if(!visible.length){planEmpty(target,'Tudo em dia nesta categoria de notificações.');return}
+ for(const n of visible.slice(0,120)){
+  const row=document.createElement('div');row.className='notificationNotice'+(n.status==='overdue'?' urgent':n.status==='budget'?' budget':'');
+  const info=document.createElement('div');info.className='notificationNoticeInfo';
+  const title=document.createElement('strong');title.textContent=(n.status==='overdue'?'⚠️ ':n.status==='upcoming'?'🗓️ ':'📊 ')+n.title;
+  const details=document.createElement('small');details.textContent=n.detail;
+  info.append(title,details);
+  const action=document.createElement('button');action.type='button';action.className='planSecondary';
+  action.textContent=n.destination==='cards'?'Ver fatura':n.destination==='planning'?'Ver orçamento':'Ver lançamento';
+  action.addEventListener('click',()=>{
+   closeAlertsPanel();
+   const targetNav=({bills:'navBills',cards:'navCards',planning:'navPlanning',history:'navHistory'})[n.destination]||'navBills';
+   el(targetNav).click();
+  });
+  row.append(info,action);target.append(row);
+ }
+ if(visible.length>120){
+  const more=document.createElement('p');more.className='foot';
+  more.textContent='Mais '+(visible.length-120)+' avisos. Utilize os filtros para conferir outras pendências.';
+  target.append(more);
+ }
 }
 el('refreshPlanning').addEventListener('click',async()=>{await loadFamilyProfiles();await loadInstallments();await loadCards();await refreshPlanning()});
 el('budgetForm').addEventListener('submit',async e=>{
@@ -1245,13 +1356,13 @@ el('readReceipt').addEventListener('click',async()=>{
 });
 async function showUser(user){
  restoreTheme(user);
- el('login').style.display=user?'none':'block';el('app').style.display=user?'block':'none';el('logout').hidden=!user;el('accountThemeToggle').hidden=!user;
+ el('login').style.display=user?'none':'block';el('app').style.display=user?'block':'none';el('logout').hidden=!user;el('accountThemeToggle').hidden=!user;el('openNotificationCenter').hidden=!user;if(!user){notificationItems=[];el('notificationCount').hidden=true;}
  if(!user)return;
  await loadFamilyProfiles();
  await loadCustomExpenseCategories();
  const {data,error}=await db.from('financial_accounts').select('id,name').order('created_at').limit(1);
  if(error){notify('Não foi possível carregar suas contas: '+error.message);return}
- if(!data?.length){notify('É necessário ter uma conta de registro configurada.');el('save').disabled=true}else{el('save').disabled=false;registrationAccountId=data[0].id}await loadDashboard()
+ if(!data?.length){notify('É necessário ter uma conta de registro configurada.');el('save').disabled=true}else{el('save').disabled=false;registrationAccountId=data[0].id}await loadDashboard();refreshPlanning().catch(()=>{})
 }
 el('loginForm').addEventListener('submit',async e=>{
  e.preventDefault();notify('Entrando...');

@@ -989,6 +989,7 @@ function makeInstallmentLine(x){
  return box;
 }
 let dashboardTransactions=[];
+let dashboardLoadVersion=0;
 function drawDueInstallments(){
  const target=el('dueInstallments');target.replaceChildren();
  const month=el('dashboardMonth').value||localToday().slice(0,7),all=el('period').value==='all',today=localToday();
@@ -996,7 +997,7 @@ function drawDueInstallments(){
  const bills=installmentBills.filter(x=>match(x.due_date)).map(x=>({...x,source:'bill'}));
  const installments=installmentTransactions.filter(x=>match(x.due_date)&&!['nubank','santander'].includes(x.payment_method)).map(x=>({...x,source:'installment'}));
  const ids=new Set(installments.map(x=>x.id));
- const expenses=dashboardTransactions.filter(x=>match(x.due_date)&&!ids.has(x.id)&&!['nubank','santander'].includes(x.payment_method)).map(x=>({...x,source:'expense'}));
+ const expenses=dashboardTransactions.filter(x=>match(x.due_date)&&!ids.has(x.id)&&!x.installment_group&&!['nubank','santander'].includes(x.payment_method)).map(x=>({...x,source:'expense'}));
  const statements=cardOpenStatements().filter(x=>match(x.date)).map(x=>({description:'Fatura '+(cardInfo[x.card]?.label||x.card),amount:x.amount,due_date:x.date,source:'card',status:'planned'}));
  const groups=[['Contas e financiamentos',bills],['Parcelas',installments],['Despesas',expenses],['Faturas de cartões',statements]];
  const allRows=groups.flatMap(g=>g[1]),open=allRows.filter(x=>x.status!=='paid');
@@ -1051,37 +1052,45 @@ function drawInstallments(){
  target.append(grid);
 }
 async function loadDashboard(){
+ const version=++dashboardLoadVersion;
  const {data,error}=await db.from('transactions').select('id,description,amount,category_label,payment_method,due_date,paid_at,status,installment_group,installment_interest_paid').eq('kind','expense').order('due_date',{ascending:false}).limit(1000);
  if(error){notify('Falha ao carregar resultados: '+error.message);return}
- await loadInstallments();await loadCards();refreshPlanning().catch(()=>{});
- dashboardTransactions=data||[];drawDueInstallments();
+ await loadInstallments();await loadCards();if(version!==dashboardLoadVersion)return;
+ dashboardTransactions=data||[];drawDueInstallments();refreshPlanning().catch(()=>{});
   const period=el('period').value,month=el('dashboardMonth').value||localToday().slice(0,7);
  const dueInPeriod=date=>period==='all'||String(date||'').slice(0,7)===month;
  const paidInPeriod=date=>period==='all'||String(date||'').slice(0,7)===month;
  const cardDue=cardCharges.filter(x=>dueInPeriod(x.statement_due));
  const billsDue=installmentBills.filter(x=>dueInPeriod(x.due_date));
- const expensesDue=(data||[]).filter(x=>dueInPeriod(x.due_date)&&!['nubank','santander'].includes(x.payment_method));
+ const installmentIds=new Set(installmentTransactions.map(x=>x.id));
+ const expensesDue=(data||[]).filter(x=>dueInPeriod(x.due_date)&&!installmentIds.has(x.id)&&!['nubank','santander'].includes(x.payment_method));
+ const installmentsDue=installmentTransactions.filter(x=>dueInPeriod(x.due_date)&&!['nubank','santander'].includes(x.payment_method));
  const plannedAmount=cardDue.reduce((s,x)=>s+Number(x.amount),0)
  +billsDue.reduce((s,x)=>s+Number(x.amount),0)
- +expensesDue.reduce((s,x)=>s+Number(x.amount),0);
+ +expensesDue.reduce((s,x)=>s+Number(x.amount),0)
+ +installmentsDue.reduce((s,x)=>s+Number(x.amount),0);
  const paidBills=installmentBills.filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at));
- const paidExpenses=(data||[]).filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at)&&!['nubank','santander'].includes(x.payment_method));
+ const paidExpenses=(data||[]).filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at)&&!installmentIds.has(x.id)&&!['nubank','santander'].includes(x.payment_method));
+ const paidInstallments=installmentTransactions.filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at)&&!['nubank','santander'].includes(x.payment_method));
  const paidCards=cardPayments.filter(x=>paidInPeriod(x.paid_at));
  const cashPaid=paidBills.reduce((s,x)=>s+Number(x.amount_paid??x.amount),0)
  +paidExpenses.reduce((s,x)=>s+Number(x.amount)+Number(x.installment_interest_paid||0),0)
+ +paidInstallments.reduce((s,x)=>s+Number(x.installment_amount_paid??x.amount)+Number(x.installment_interest_paid||0),0)
  +paidCards.reduce((s,x)=>s+Number(x.amount),0);
  const open=billsDue.filter(x=>x.status!=='paid').reduce((s,x)=>s+Number(x.amount),0)
  +expensesDue.filter(x=>x.status!=='paid').reduce((s,x)=>s+Number(x.amount),0)
+ +installmentsDue.filter(x=>x.status!=='paid').reduce((s,x)=>s+Number(x.amount),0)
  +cardDue.filter(x=>!cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due)).reduce((s,x)=>s+Number(x.amount),0);
  el('totalSpent').textContent=money(plannedAmount);
  el('totalPaid').textContent=money(cashPaid);
  el('totalOpen').textContent=money(open);
  el('dueCommitmentsTitle').textContent=period==='all'?'Todos os compromissos':'Compromissos com vencimento em '+planMonthName(month);
   el('cardPurchased').textContent=money(cardCharges.filter(x=>period==='all'||x.purchase_date.startsWith(month)).reduce((s,x)=>s+Number(x.amount),0));
- const interestTotal=paidBills.reduce((s,x)=>s+Number(x.interest_paid||0),0)+paidExpenses.reduce((s,x)=>s+Number(x.installment_interest_paid||0),0)+paidCards.reduce((s,x)=>s+Number(x.interest_paid||0),0);
+ const interestTotal=paidBills.reduce((s,x)=>s+Number(x.interest_paid||0),0)+paidExpenses.reduce((s,x)=>s+Number(x.installment_interest_paid||0),0)+paidInstallments.reduce((s,x)=>s+Number(x.installment_interest_paid||0),0)+paidCards.reduce((s,x)=>s+Number(x.interest_paid||0),0);
  el('interestPaidTotal').textContent=money(interestTotal);
  const rows=[
  ...expensesDue.map(x=>({...x,detailSource:'transaction',chartAmount:Number(x.amount)})),
+  ...installmentsDue.map(x=>({...x,detailSource:'transaction',chartAmount:Number(x.amount)})),
  ...billsDue.map(x=>({...x,category_label:x.category_label||(installmentBucket({...x,source:'bill'})==='Carro'?'Veículo':'Moradia'),payment_method:x.payment_method||null,detailSource:'bill',chartAmount:Number(x.amount)})),
  ...cardDue.map(x=>({...x,category_label:x.category_label||'Sem categoria',payment_method:x.card,detailSource:'card',due_date:x.statement_due,chartAmount:Number(x.amount)}))
  ].sort((a,b)=>String(b.due_date).localeCompare(String(a.due_date)));
@@ -1096,7 +1105,6 @@ async function loadDashboard(){
 function drawCardCategoryPanel(){
  const monthSelect=el('cardCategoryMonth'),selected=el('dashboardMonth').value||localToday().slice(0,7);
  const months=[...new Set([...cardCharges.map(x=>String(x.statement_due).slice(0,7)),selected])].sort();
- const current=localToday().slice(0,7);
  monthSelect.replaceChildren();
  for(const m of months){const o=document.createElement('option');o.value=m;o.textContent=new Date(m+'-02T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});monthSelect.append(o)}
  monthSelect.value=selected;

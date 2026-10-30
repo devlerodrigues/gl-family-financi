@@ -1171,7 +1171,7 @@ function drawCardCategoryPanel(){
  const all=el('period').value==='all',basis=el('cardCategoryBasis').value||'purchase',card=el('cardCategoryFilter').value;
  const dateField=basis==='due'?'statement_due':'purchase_date';
  const periodSelect=el('cardCategoryMonth');
- const validMonth=x=>/^\\d{4}-\\d{2}$/.test(x);
+ const validMonth=x=>/^\d{4}-\d{2}$/.test(x);
  const months=[...new Set([month,...cardCharges.map(x=>String(x[dateField]||'').slice(0,7)).filter(validMonth)])].sort();
  periodSelect.replaceChildren(new Option('Todo o período','all'));
  for(const m of months)periodSelect.add(new Option(planMonthName(m),m));

@@ -1051,7 +1051,7 @@ function drawInstallments(){
  target.append(grid);
 }
 async function loadDashboard(){
- const {data,error}=await db.from('transactions').select('description,amount,category_label,payment_method,due_date,paid_at,status,installment_interest_paid').eq('kind','expense').order('due_date',{ascending:false}).limit(1000);
+ const {data,error}=await db.from('transactions').select('id,description,amount,category_label,payment_method,due_date,paid_at,status,installment_group,installment_interest_paid').eq('kind','expense').order('due_date',{ascending:false}).limit(1000);
  if(error){notify('Falha ao carregar resultados: '+error.message);return}
  await loadInstallments();await loadCards();refreshPlanning().catch(()=>{});
  dashboardTransactions=data||[];drawDueInstallments();
@@ -1060,12 +1060,12 @@ async function loadDashboard(){
  const paidInPeriod=date=>period==='all'||String(date||'').slice(0,7)===month;
  const cardDue=cardCharges.filter(x=>dueInPeriod(x.statement_due));
  const billsDue=installmentBills.filter(x=>dueInPeriod(x.due_date));
- const expensesDue=(data||[]).filter(x=>dueInPeriod(x.due_date));
+ const expensesDue=(data||[]).filter(x=>dueInPeriod(x.due_date)&&!['nubank','santander'].includes(x.payment_method));
  const plannedAmount=cardDue.reduce((s,x)=>s+Number(x.amount),0)
  +billsDue.reduce((s,x)=>s+Number(x.amount),0)
  +expensesDue.reduce((s,x)=>s+Number(x.amount),0);
  const paidBills=installmentBills.filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at));
- const paidExpenses=(data||[]).filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at));
+ const paidExpenses=(data||[]).filter(x=>x.status==='paid'&&paidInPeriod(x.paid_at)&&!['nubank','santander'].includes(x.payment_method));
  const paidCards=cardPayments.filter(x=>paidInPeriod(x.paid_at));
  const cashPaid=paidBills.reduce((s,x)=>s+Number(x.amount_paid??x.amount),0)
  +paidExpenses.reduce((s,x)=>s+Number(x.amount)+Number(x.installment_interest_paid||0),0)

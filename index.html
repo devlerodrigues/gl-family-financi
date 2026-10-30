@@ -302,7 +302,7 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 <button class="navbtn" id="navCards" type="button"><span class="navIcon" aria-hidden="true">▣</span><span class="navLabel">Cartões</span></button>
 <button class="navbtn" id="navPlanning" type="button"><span class="navIcon" aria-hidden="true">◎</span><span class="navLabel">Planejamento</span></button>
 </aside><div>
-<section id="dashboard"><h2>Visão geral dos gastos</h2><p>Compromissos e pagamentos em um só lugar.</p><div class="dashboardFilters"><label>Período<select id="period"><option value="month">Mês selecionado</option><option value="all">Todo o período</option></select></label><label id="dashboardMonthWrap">Mês de referência<input type="month" id="dashboardMonth"></label></div><div class="stats"><div class="metric"><small>Total gasto / compromissos do período</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Total pago no período</small><strong id="totalPaid">R$ 0,00</strong></div><div class="metric"><small>Em aberto no período</small><strong id="totalOpen">R$ 0,00</strong></div></div><div class="card" id="dashboardCommitments" style="margin-bottom:16px"><h3 id="dueCommitmentsTitle">Compromissos com vencimento no mês</h3><p class="foot">Contas, prestações, despesas e faturas reunidas pela data de vencimento, sem cobrança duplicada.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Compras registradas nos cartões</h3><strong id="cardPurchased" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Compras no crédito registradas neste período, não confundidas com pagamento de fatura.</p></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos pagos no período</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="card" style="margin-bottom:16px" id="cardCategoryPanel"><h3 class="sec-title">Categorias das faturas dos cartões</h3><p class="foot">Compras de Nubank e Santander separadas por categoria e mês de vencimento. Toque em uma categoria para ver cada compra.</p><div class="gridFilters"><label>Mês da fatura (segue o dashboard)<select id="cardCategoryMonth" disabled></select></label><label>Cartão<select id="cardCategoryFilter"><option value="all">Ambos os cartões</option><option value="nubank">Nubank</option><option value="santander">Santander</option></select></label></div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><small>Valor das faturas selecionadas</small><strong id="cardCategoryTotal">R$ 0,00</strong></div><div class="metric"><small>Compras e parcelas</small><strong id="cardCategoryCount">0</strong></div></div><div id="cardCategoryChart"></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
+<section id="dashboard"><h2>Visão geral dos gastos</h2><p>Compromissos e pagamentos em um só lugar.</p><div class="dashboardFilters"><label>Período<select id="period"><option value="month">Mês selecionado</option><option value="all">Todo o período</option></select></label><label id="dashboardMonthWrap">Mês de referência<input type="month" id="dashboardMonth"></label></div><p id="dashboardLoadStatus" class="foot" role="status" aria-live="polite" hidden></p><div class="stats"><div class="metric"><small>Total gasto / compromissos do período</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Total pago no período</small><strong id="totalPaid">R$ 0,00</strong></div><div class="metric"><small>Em aberto no período</small><strong id="totalOpen">R$ 0,00</strong></div></div><div class="card" id="dashboardCommitments" style="margin-bottom:16px"><h3 id="dueCommitmentsTitle">Compromissos com vencimento no mês</h3><p class="foot">Contas, prestações, despesas e faturas reunidas pela data de vencimento, sem cobrança duplicada.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Compras registradas nos cartões</h3><strong id="cardPurchased" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Compras no crédito registradas neste período, não confundidas com pagamento de fatura.</p></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos pagos no período</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="card" style="margin-bottom:16px" id="cardCategoryPanel"><h3 class="sec-title">Categorias das faturas dos cartões</h3><p class="foot">Compras de Nubank e Santander separadas por categoria e mês de vencimento. Toque em uma categoria para ver cada compra.</p><div class="gridFilters"><label>Mês da fatura (segue o dashboard)<select id="cardCategoryMonth" disabled></select></label><label>Cartão<select id="cardCategoryFilter"><option value="all">Ambos os cartões</option><option value="nubank">Nubank</option><option value="santander">Santander</option></select></label></div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><small>Valor das faturas selecionadas</small><strong id="cardCategoryTotal">R$ 0,00</strong></div><div class="metric"><small>Compras e parcelas</small><strong id="cardCategoryCount">0</strong></div></div><div id="cardCategoryChart"></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
 <section id="planningHub" hidden class="planningHub" aria-label="Planejamento financeiro familiar">
  <div class="planningHeading"><div><h2>Planejamento familiar</h2><p>Orçamentos, projeções e metas em um só lugar. Configure alertas em ⚙ Conta.</p></div><button id="refreshPlanning" type="button" class="planSecondary">Atualizar</button></div>
  <details class="iphoneInstallHelp"><summary>Instalar GL Family no celular (Android e iPhone)</summary><p><strong>Android / Motorola:</strong> abra pelo Chrome, toque nos três pontos (⋮) e escolha <strong>Instalar app</strong>. Se aparecer apenas <strong>Adicionar à tela inicial</strong>, remova o atalho antigo e instale novamente após atualizar a página. O ícone será o do GL Family.</p><p><strong>iPhone:</strong> no Safari, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.</p></details><div class="planningQuickLinks"><a href="#budgetPanel">Orçamento</a><a href="#forecastPanel">12 meses</a><a href="#peoplePanel">Por pessoa</a><a href="#goalsPanel">Metas</a></div>
@@ -891,8 +891,8 @@ function cardDue(card,date,offset=0){const cfg=cardInfo[card],parts=date.split('
 let cardCharges=[],cardPayments=[],cardLimitSnapshots=[];
 async function loadCards(){
  const [c,p,l]=await Promise.all([db.from('family_card_charges').select('*').order('statement_due',{ascending:true}),db.from('family_card_payments').select('*'),db.from('family_card_limit_snapshots').select('*')]);
- if(c.error||p.error){notify('Falha ao buscar cartões: '+(c.error?.message||p.error?.message));return}
- cardCharges=c.data||[];cardPayments=p.data||[];cardLimitSnapshots=l.data||[];drawCards();drawCardCategoryPanel()
+ if(c.error||p.error){notify('Falha ao buscar cartões: '+(c.error?.message||p.error?.message));return false}
+ cardCharges=c.data||[];cardPayments=p.data||[];cardLimitSnapshots=l.data||[];drawCards();drawCardCategoryPanel();return true
 }
 let activeCardPayment=null;
 function openCardPayment(card,due,total,count){
@@ -912,7 +912,7 @@ el('cardPayForm').addEventListener('submit',async e=>{
  if(!Number.isFinite(amount)||amount<p.total){notify('Informe o valor integral da fatura ou maior. Pagamentos parciais ainda não são suportados.');return}
  const button=el('cardPayConfirm');button.disabled=true;
  const interest=Math.round((amount-p.total)*100)/100;
- try{const {error}=await db.from('family_card_payments').insert({card:p.card,statement_due:p.due,amount,expected_amount:p.total,interest_paid:interest});if(error)throw error;closeCardPayment();notify('Fatura paga: '+money(amount)+' · encargos: '+money(interest)+'. Sem duplicar despesas.');await loadCards()}catch(err){notify('Erro ao pagar fatura: '+(err.message||'erro'))}finally{button.disabled=false}
+ try{const {error}=await db.from('family_card_payments').insert({card:p.card,statement_due:p.due,amount,expected_amount:p.total,interest_paid:interest});if(error)throw error;closeCardPayment();notify('Fatura paga: '+money(amount)+' · encargos: '+money(interest)+'. Sem duplicar despesas.');await loadCards();if(!el('dashboard').hidden)await loadDashboard()}catch(err){notify('Erro ao pagar fatura: '+(err.message||'erro'))}finally{button.disabled=false}
 });
 function drawCards(){
  const target=el('cardsContent');target.replaceChildren();
@@ -955,9 +955,9 @@ async function loadInstallments(){
  db.from('scheduled_bills').select('id,description,installment_number,installment_total,amount,due_date,status,origin_key,paid_at,amount_paid,interest_paid,category_label,owner_id,paid_by').order('due_date',{ascending:true}).limit(1000),
  db.from('transactions').select('id,description,amount,due_date,status,payment_method,category_label,paid_at,installment_amount_paid,installment_interest_paid,installment_group,installment_number,installment_total').not('installment_group','is',null).order('due_date',{ascending:true}).limit(1000)
  ]);
- if(b.error||t.error){notify('Falha ao consultar parcelas: '+(b.error?.message||t.error?.message));return}
+ if(b.error||t.error){notify('Falha ao consultar parcelas: '+(b.error?.message||t.error?.message));return false}
  installmentBills=(b.data||[]).filter(x=>!/^santander-|^nubank-/i.test(x.origin_key||''));installmentTransactions=t.data||[];
- drawInstallments();drawDueInstallments();
+ drawInstallments();drawDueInstallments();return true;
 }
 function installmentRows(){
  return [...installmentBills.map(x=>({...x,source:'bill'})),...installmentTransactions.map(x=>({...x,source:'transaction'}))];
@@ -1017,7 +1017,7 @@ function drawDueInstallments(){
  if(!allRows.length){target.append(document.createTextNode('Nenhum compromisso neste período.'));return}
  for(const [label,items] of groups){if(!items.length)continue;const group=document.createElement('div');group.className='dueGroup';const head=document.createElement('h4');head.textContent=label+' ('+items.length+')';group.append(head);
  for(const x of items.sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date))).slice(0,40)){
- const line=document.createElement('div');line.className='dueRow',left=document.createElement('div'),right=document.createElement('div'),name=document.createElement('span'),meta=document.createElement('small'),value=document.createElement('strong');
+ const line=document.createElement('div');line.className='dueRow';const left=document.createElement('div'),right=document.createElement('div'),name=document.createElement('span'),meta=document.createElement('small'),value=document.createElement('strong');
  name.textContent=x.description||'Compromisso';meta.textContent=x.due_date+' · '+(x.installment_number&&x.installment_total?'Parcela '+x.installment_number+'/'+x.installment_total+' · ':'')+(x.status==='paid'?'Pago':x.due_date<today?'Vencido':'Em aberto');value.textContent=money(x.status==='paid'?(x.amount_paid??x.installment_amount_paid??x.amount):x.amount);left.append(name,meta);right.append(value);
  if(x.status!=='paid'){const btn=document.createElement('button');btn.type='button';btn.textContent=x.source==='card'?'Ver fatura':x.source==='expense'?'Ver despesa':'Quitar';btn.onclick=()=>{if(x.source==='card'){switchView('cards');loadCards()}else if(x.source==='expense'){switchView('history');loadHistory()}else markInstallmentPaid(x)};right.append(btn)}
  line.append(left,right);group.append(line)}
@@ -1065,9 +1065,12 @@ function drawInstallments(){
 }
 async function loadDashboard(){
  const version=++dashboardLoadVersion;
+ const banner=el('dashboardLoadStatus');banner.hidden=false;banner.textContent='Atualizando dashboard...';
+ try {
  const {data,error}=await db.from('transactions').select('id,description,amount,category_label,payment_method,due_date,paid_at,status,installment_group,installment_interest_paid').eq('kind','expense').order('due_date',{ascending:false}).limit(1000);
- if(error){notify('Falha ao carregar resultados: '+error.message);return}
- await loadInstallments();await loadCards();if(version!==dashboardLoadVersion)return;
+ if(error)throw error;
+ const billsReady=await loadInstallments();const cardsReady=await loadCards();if(version!==dashboardLoadVersion)return;
+ if(billsReady===false||cardsReady===false)throw new Error('Não foi possível consultar todas as contas e cartões.');
  dashboardTransactions=data||[];drawDueInstallments();refreshPlanning().catch(()=>{});
   const period=el('period').value,month=el('dashboardMonth').value||localToday().slice(0,7);
  const dueInPeriod=date=>period==='all'||String(date||'').slice(0,7)===month;
@@ -1111,21 +1114,23 @@ async function loadDashboard(){
  const sorted=m=>[...m].sort((a,b)=>b[1]-a[1]);dashboardDetailRows=rows;showBreakdown(el('categoryChart'),sorted(cats),plannedAmount,openCategoryDetail);showBreakdown(el('paymentChart'),sorted(methods),plannedAmount,label=>openCategoryDetail(label,dashboardDetailRows,'method'));
  const last=el('lastExpenses');last.replaceChildren();if(!rows.length){last.textContent='Nenhum gasto ou compromisso neste período.';return}
  for(const x of rows.slice(0,8)){const div=document.createElement('button');div.type='button';div.className='categoryTap';div.addEventListener('click',()=>openCategoryDetail(x.category_label||'Sem categoria',[x]));const inner=document.createElement('div');inner.className='line';const label=document.createElement('span');label.textContent=x.due_date+' · '+x.description+' · '+(x.category_label||'Sem categoria');const amount=document.createElement('strong');amount.textContent=money(x.chartAmount);inner.append(label,amount);div.append(inner);last.append(div)}
+ }catch(err){
+  if(version===dashboardLoadVersion){console.error('Erro no dashboard financeiro',err);banner.textContent='Falha ao atualizar o dashboard: '+(err?.message||String(err));notify(banner.textContent)}
+ }finally{
+  if(version===dashboardLoadVersion&&!banner.textContent.startsWith('Falha'))banner.hidden=true;
+ }
 }
 
 
 function drawCardCategoryPanel(){
- const monthSelect=el('cardCategoryMonth'),selected=el('dashboardMonth').value||localToday().slice(0,7);
- const months=[...new Set([...cardCharges.map(x=>String(x.statement_due).slice(0,7)),selected])].sort();
- monthSelect.replaceChildren();
- for(const m of months){const o=document.createElement('option');o.value=m;o.textContent=new Date(m+'-02T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});monthSelect.append(o)}
- monthSelect.value=selected;
- const month=monthSelect.value,card=el('cardCategoryFilter').value;
- const rows=cardCharges.filter(x=>String(x.statement_due).startsWith(month)&&(card==='all'||x.card===card)).map(x=>({...x,detailSource:'card',payment_method:x.card,due_date:x.statement_due,chartAmount:Number(x.amount)}));
- const total=rows.reduce((s,x)=>s+x.chartAmount,0);
- el('cardCategoryTotal').textContent=money(total);el('cardCategoryCount').textContent=String(rows.length);
- const cats=new Map();for(const x of rows){const c=x.category_label||'Sem categoria';cats.set(c,(cats.get(c)||0)+x.chartAmount)}
- showBreakdown(el('cardCategoryChart'),[...cats].sort((a,b)=>b[1]-a[1]),total,category=>openCategoryDetail(category,rows));
+ const month=el('dashboardMonth').value||localToday().slice(0,7),all=el('period').value==='all',card=el('cardCategoryFilter').value;
+ const select=el('cardCategoryMonth');select.replaceChildren(new Option(all?'Todo o período':planMonthName(month),all?'all':month));
+ const rows=cardCharges.filter(x=>(all||String(x.statement_due).slice(0,7)===month)&&(card==='all'||x.card===card)).map(x=>({...x,detailSource:'card',payment_method:x.card,due_date:x.statement_due,chartAmount:Number(x.amount)}));
+ const total=rows.reduce((sum,x)=>sum+x.chartAmount,0);
+ el('cardCategoryTotal').textContent=money(total);
+ el('cardCategoryCount').textContent=String(rows.length);
+ const cats=new Map();for(const x of rows){const category=x.category_label||'Sem categoria';cats.set(category,(cats.get(category)||0)+x.chartAmount)}
+ showBreakdown(el('cardCategoryChart'),[...cats].sort((x,y)=>y[1]-x[1]),total,category=>openCategoryDetail(category,rows));
 }
 el('cardCategoryMonth').addEventListener('change',drawCardCategoryPanel);
 el('cardCategoryFilter').addEventListener('change',drawCardCategoryPanel);

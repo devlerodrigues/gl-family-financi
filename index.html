@@ -265,6 +265,23 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 #dashboard>.card:not(#cardCategoryPanel):not(#dashboardCommitments){order:6}
 #dashboard>.split .card{min-width:0}
 @media(max-width:700px){#dashboard>.split{display:grid;grid-template-columns:minmax(0,1fr)}}
+
+/* Cartoes: comparacao de compras e vencimentos sincronizada ao mes do dashboard */
+#cardCategoryPanel .cardAnalyticsFilters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 15px}
+#cardCategoryPanel .cardAnalyticsFilters label{min-width:0;display:block}
+#cardCategoryPanel .cardAnalyticsFilters select{width:100%;min-width:0}
+#cardCategoryContext{margin:12px 0;line-height:1.55}
+.cardDueOverview{border-top:1px solid var(--border);padding-top:13px;margin-top:16px}
+.cardDueOverview h4{font-size:14px;margin:0 0 10px}
+.cardDueGroups{display:flex;flex-wrap:wrap;gap:9px}
+.cardDueGroups button,.cardDueOverview .cardDueGo{display:inline-flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);background:var(--card);border-radius:10px;color:var(--text);padding:10px 12px;text-align:left;cursor:pointer;font-size:13px}
+.cardDueGroups button:hover,.cardDueOverview .cardDueGo:hover{border-color:var(--gold)}
+.cardDueGroups button strong{color:var(--gold);white-space:nowrap}
+.cardDueOverview p{margin:6px 0 10px}
+.cardInvoiceRow{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cardInvoiceRow strong{white-space:nowrap}
+@media(max-width:900px){#cardCategoryPanel .cardAnalyticsFilters{grid-template-columns:repeat(2,minmax(0,1fr))}#cardCategoryPanel .cardAnalyticsFilters label:first-child{grid-column:1/-1}}
+@media(max-width:480px){#cardCategoryPanel .cardAnalyticsFilters{grid-template-columns:1fr}#cardCategoryPanel .cardAnalyticsFilters label:first-child{grid-column:auto}.cardDueGroups{display:grid;grid-template-columns:1fr}.cardInvoiceRow strong{white-space:normal}}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="openNotificationCenter" class="notificationBell" type="button" title="Central de notificações" aria-label="Abrir central de notificações" hidden>🔔<span id="notificationCount" class="notificationCount" hidden>0</span></button><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openAlertsPanel" class="usersMenuButton">🔔 Central de notificações <span>›</span></button><button type="button" id="openWaPanel" class="usersMenuButton">💬 Agente WhatsApp <span>›</span></button><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="alertsOverlay" class="payOverlay" hidden>
@@ -302,7 +319,7 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 <button class="navbtn" id="navCards" type="button"><span class="navIcon" aria-hidden="true">▣</span><span class="navLabel">Cartões</span></button>
 <button class="navbtn" id="navPlanning" type="button"><span class="navIcon" aria-hidden="true">◎</span><span class="navLabel">Planejamento</span></button>
 </aside><div>
-<section id="dashboard"><h2>Visão geral dos gastos</h2><p>Compromissos e pagamentos em um só lugar.</p><div class="dashboardFilters"><label>Período<select id="period"><option value="month">Mês selecionado</option><option value="all">Todo o período</option></select></label><label id="dashboardMonthWrap">Mês de referência<input type="month" id="dashboardMonth"></label></div><p id="dashboardLoadStatus" class="foot" role="status" aria-live="polite" hidden></p><div class="stats"><div class="metric"><small>Total gasto / compromissos do período</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Quitado dos vencimentos (sem juros)</small><strong id="totalPaid">R$ 0,00</strong></div><div class="metric"><small>Pendente nos vencimentos</small><strong id="totalOpen">R$ 0,00</strong></div></div><div class="card" id="dashboardCommitments" style="margin-bottom:16px"><h3 id="dueCommitmentsTitle">Compromissos com vencimento no mês</h3><p class="foot">Contas, prestações, despesas e faturas reunidas pela data de vencimento, sem cobrança duplicada.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Compras registradas nos cartões</h3><strong id="cardPurchased" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Compras no crédito registradas neste período, não confundidas com pagamento de fatura.</p></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos dos vencimentos selecionados</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="card" style="margin-bottom:16px" id="cardCategoryPanel"><h3 class="sec-title">Categorias das faturas dos cartões</h3><p class="foot">Compras de Nubank e Santander separadas por categoria e mês de vencimento. Toque em uma categoria para ver cada compra.</p><div class="gridFilters"><label>Mês da fatura (segue o dashboard)<select id="cardCategoryMonth" disabled></select></label><label>Cartão<select id="cardCategoryFilter"><option value="all">Ambos os cartões</option><option value="nubank">Nubank</option><option value="santander">Santander</option></select></label></div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><small>Valor das faturas selecionadas</small><strong id="cardCategoryTotal">R$ 0,00</strong></div><div class="metric"><small>Compras e parcelas</small><strong id="cardCategoryCount">0</strong></div></div><div id="cardCategoryChart"></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
+<section id="dashboard"><h2>Visão geral dos gastos</h2><p>Compromissos e pagamentos em um só lugar.</p><div class="dashboardFilters"><label>Período<select id="period"><option value="month">Mês selecionado</option><option value="all">Todo o período</option></select></label><label id="dashboardMonthWrap">Mês de referência<input type="month" id="dashboardMonth"></label></div><p id="dashboardLoadStatus" class="foot" role="status" aria-live="polite" hidden></p><div class="stats"><div class="metric"><small>Total gasto / compromissos do período</small><strong id="totalSpent">R$ 0,00</strong></div><div class="metric"><small>Quitado dos vencimentos (sem juros)</small><strong id="totalPaid">R$ 0,00</strong></div><div class="metric"><small>Pendente nos vencimentos</small><strong id="totalOpen">R$ 0,00</strong></div></div><div class="card" id="dashboardCommitments" style="margin-bottom:16px"><h3 id="dueCommitmentsTitle">Compromissos com vencimento no mês</h3><p class="foot">Contas, prestações, despesas e faturas reunidas pela data de vencimento, sem cobrança duplicada.</p><div id="dueInstallments">Carregando...</div></div><div class="card" style="margin-bottom:16px"><h3>Compras registradas nos cartões</h3><strong id="cardPurchased" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Compras no crédito registradas neste período, não confundidas com pagamento de fatura.</p></div><div class="card" style="margin-bottom:16px"><h3>Juros e encargos dos vencimentos selecionados</h3><strong id="interestPaidTotal" style="font-size:26px;color:var(--gold)">R$ 0,00</strong><p class="foot">Diferença entre o valor original das parcelas e o valor efetivamente pago.</p></div><div class="card" style="margin-bottom:16px" id="cardCategoryPanel"><h3 class="sec-title">Cartões: compras e faturas por categoria</h3><p class="foot">Veja as compras realizadas ou as parcelas que vencem em cada fatura. O mês escolhido aqui também altera o dashboard inteiro.</p><div class="gridFilters cardAnalyticsFilters"><label>O que deseja analisar?<select id="cardCategoryBasis"><option value="purchase">Compras feitas no mês</option><option value="due">Parcelas por vencimento</option></select></label><label>Mês (sincronizado com o dashboard)<select id="cardCategoryMonth"></select></label><label>Cartão<select id="cardCategoryFilter"><option value="all">Ambos os cartões</option><option value="nubank">Nubank</option><option value="santander">Santander</option></select></label></div><div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="metric"><small id="cardCategoryTotalLabel">Total das parcelas dessas compras</small><strong id="cardCategoryTotal">R$ 0,00</strong></div><div class="metric"><small id="cardCategoryCountLabel">Parcelas registradas</small><strong id="cardCategoryCount">0</strong></div></div><p id="cardCategoryContext" class="foot" aria-live="polite"></p><div id="cardCategoryChart"></div><div id="cardCategoryUpcoming"></div></div><div class="split"><div class="card"><h3 class="sec-title">Gastos por categoria</h3><div id="categoryChart">Sem gastos no período.</div></div><div class="card"><h3 class="sec-title">Por forma de pagamento</h3><div id="paymentChart">Sem gastos no período.</div></div></div><div class="card" style="margin-top:16px"><h3 class="sec-title">Últimos gastos</h3><div id="lastExpenses">Sem registros.</div></div></section>
 <section id="planningHub" hidden class="planningHub" aria-label="Planejamento financeiro familiar">
  <div class="planningHeading"><div><h2>Planejamento familiar</h2><p>Orçamentos, projeções e metas em um só lugar. Configure alertas em ⚙ Conta.</p></div><button id="refreshPlanning" type="button" class="planSecondary">Atualizar</button></div>
  <details class="iphoneInstallHelp"><summary>Instalar GL Family no celular (Android e iPhone)</summary><p><strong>Android / Motorola:</strong> abra pelo Chrome, toque nos três pontos (⋮) e escolha <strong>Instalar app</strong>. Se aparecer apenas <strong>Adicionar à tela inicial</strong>, remova o atalho antigo e instale novamente após atualizar a página. O ícone será o do GL Family.</p><p><strong>iPhone:</strong> no Safari, toque em <strong>Compartilhar</strong> e depois em <strong>Adicionar à Tela de Início</strong>.</p></details><div class="planningQuickLinks"><a href="#budgetPanel">Orçamento</a><a href="#forecastPanel">12 meses</a><a href="#peoplePanel">Por pessoa</a><a href="#goalsPanel">Metas</a></div>
@@ -852,7 +869,7 @@ let dashboardDetailRows=[];
 function openCategoryDetail(category,sourceRows=dashboardDetailRows,kind='category'){
  const rows=sourceRows.filter(x=>kind==='method'?((({nubank:'Cartão Nubank',santander:'Cartão Santander',pix:'Pix'})[x.payment_method]||'Outros pagamentos')===category):(x.category_label||'Sem categoria')===category);
  el('categoryDetailTitle').textContent=category;
- el('categoryDetailPeriod').textContent=sourceRows===dashboardDetailRows?(el('period').value==='all'?'Todos os períodos':'Vencimentos de '+el('dashboardMonth').value):'Faturas de '+el('cardCategoryMonth').value;
+ el('categoryDetailPeriod').textContent=sourceRows===dashboardDetailRows?(el('period').value==='all'?'Todos os períodos':'Vencimentos de '+el('dashboardMonth').value):(el('cardCategoryBasis').value==='purchase'?'Compras registradas em ':'Faturas com vencimento em ')+(el('cardCategoryMonth').value==='all'?'todo o período':planMonthName(el('cardCategoryMonth').value));
  el('categoryDetailTotal').textContent=money(rows.reduce((s,x)=>s+x.chartAmount,0))+' · '+rows.length+' lançamento(s)';
  const target=el('categoryDetailList');target.replaceChildren();
  for(const x of rows.sort((a,b)=>String(b.due_date).localeCompare(String(a.due_date)))){
@@ -1144,17 +1161,91 @@ async function loadDashboard(){
 }
 
 
+function setCardAnalyticsMonth(month){
+ if(month==='all'){el('period').value='all';}
+ else {el('dashboardMonth').value=month;el('period').value='month';}
+ loadDashboard();
+}
 function drawCardCategoryPanel(){
- const month=el('dashboardMonth').value||localToday().slice(0,7),all=el('period').value==='all',card=el('cardCategoryFilter').value;
- const select=el('cardCategoryMonth');select.replaceChildren(new Option(all?'Todo o período':planMonthName(month),all?'all':month));
- const rows=cardCharges.filter(x=>(all||String(x.statement_due).slice(0,7)===month)&&(card==='all'||x.card===card)).map(x=>({...x,detailSource:'card',payment_method:x.card,due_date:x.statement_due,chartAmount:Number(x.amount)}));
+ const month=el('dashboardMonth').value||localToday().slice(0,7);
+ const all=el('period').value==='all',basis=el('cardCategoryBasis').value||'purchase',card=el('cardCategoryFilter').value;
+ const dateField=basis==='due'?'statement_due':'purchase_date';
+ const periodSelect=el('cardCategoryMonth');
+ const validMonth=x=>/^\\d{4}-\\d{2}$/.test(x);
+ const months=[...new Set([month,...cardCharges.map(x=>String(x[dateField]||'').slice(0,7)).filter(validMonth)])].sort();
+ periodSelect.replaceChildren(new Option('Todo o período','all'));
+ for(const m of months)periodSelect.add(new Option(planMonthName(m),m));
+ periodSelect.value=all?'all':month;
+ const rows=cardCharges.filter(x=>(all||String(x[dateField]||'').slice(0,7)===month)&&(card==='all'||x.card===card))
+  .map(x=>({...x,detailSource:'card',payment_method:x.card,due_date:x.statement_due,chartAmount:Number(x.amount)}));
  const total=rows.reduce((sum,x)=>sum+x.chartAmount,0);
  el('cardCategoryTotal').textContent=money(total);
  el('cardCategoryCount').textContent=String(rows.length);
- const cats=new Map();for(const x of rows){const category=x.category_label||'Sem categoria';cats.set(category,(cats.get(category)||0)+x.chartAmount)}
- showBreakdown(el('cardCategoryChart'),[...cats].sort((x,y)=>y[1]-x[1]),total,category=>openCategoryDetail(category,rows));
+ el('cardCategoryTotalLabel').textContent=basis==='purchase'?'Total das parcelas dessas compras':'Valor das faturas selecionadas';
+ el('cardCategoryCountLabel').textContent=basis==='purchase'?'Parcelas registradas':'Parcelas com vencimento';
+ const context=el('cardCategoryContext');
+ context.textContent=basis==='purchase'
+  ?'Os valores incluem parcelas futuras das compras realizadas '+(all?'em todos os períodos':'em '+planMonthName(month))+'. Não representam necessariamente o que vence neste mês.'
+  :'As parcelas são agrupadas pelo vencimento da fatura '+(all?'em todos os períodos':'em '+planMonthName(month))+'. Compras feitas antes também entram no mês em que vencem.';
+ const categories=new Map();
+ for(const x of rows){const cat=x.category_label||'Sem categoria';categories.set(cat,(categories.get(cat)||0)+x.chartAmount)}
+ showBreakdown(el('cardCategoryChart'),[...categories].sort((x,y)=>y[1]-x[1]),total,category=>openCategoryDetail(category,rows));
+ const details=el('cardCategoryUpcoming');details.replaceChildren();
+ const makeButton=(label,action,cls)=>{
+  const btn=document.createElement('button');btn.type='button';if(cls)btn.className=cls;btn.textContent=label;btn.addEventListener('click',action);return btn;
+ };
+ if(rows.length&&basis==='purchase'){
+  details.className='cardDueOverview';
+  const h=document.createElement('h4');h.textContent='Quando essas parcelas entram nas faturas';details.append(h);
+  const groups=new Map();
+  for(const x of rows){
+   const due=String(x.statement_due||'').slice(0,7);if(!validMonth(due))continue;
+   groups.set(due,(groups.get(due)||0)+Number(x.amount));
+  }
+  const wrap=document.createElement('div');wrap.className='cardDueGroups';
+  for(const [due,amount] of [...groups].sort((x,y)=>x[0].localeCompare(y[0]))){
+   const btn=document.createElement('button');btn.type='button';
+   const period=document.createElement('span');period.textContent=planMonthName(due);
+   const value=document.createElement('strong');value.textContent=money(amount);
+   btn.append(period,value);btn.setAttribute('aria-label','Ver faturas com vencimento em '+planMonthName(due));
+   btn.addEventListener('click',()=>{el('cardCategoryBasis').value='due';setCardAnalyticsMonth(due)});
+   wrap.append(btn);
+  }
+  details.append(wrap);
+ }else if(rows.length&&basis==='due'){
+  details.className='cardDueOverview';
+  const h=document.createElement('h4');h.textContent='Situação das faturas com vencimento selecionado';details.append(h);
+  const statements=dashboardStatementRows().filter(x=>(all||String(x.due_date||'').slice(0,7)===month)&&(card==='all'||x.card===card));
+  for(const x of statements){
+   const line=document.createElement('div');line.className='cardInvoiceRow';
+   const title=document.createElement('span');title.textContent=(cardInfo[x.card]?.label||x.card)+' · '+x.due_date+' · '+(x.outstanding<=0.009?'Quitada':'Em aberto');
+   const amount=document.createElement('strong');amount.textContent=money(x.outstanding<=0.009?x.amount:x.outstanding)+(x.outstanding<=0.009?' pago':' pendente');
+   line.append(title,amount);details.append(line);
+  }
+ }else if(!rows.length&&!all){
+  details.className='cardDueOverview';
+  el('cardCategoryChart').textContent=basis==='due'?'Nenhuma parcela de fatura vence neste mês para o cartão selecionado.':'Nenhuma compra desse cartão foi cadastrada neste mês.';
+  const otherField=basis==='due'?'purchase_date':'statement_due';
+  const otherRows=cardCharges.filter(x=>String(x[otherField]||'').slice(0,7)===month&&(card==='all'||x.card===card));
+  if(otherRows.length){
+   const p=document.createElement('p');p.className='foot';p.textContent=basis==='due'
+    ?'Há '+otherRows.length+' parcela(s) de compras feitas neste mês, mas elas vencem em outros meses.'
+    :'Há '+otherRows.length+' parcela(s) com vencimento neste mês, mesmo sem compras novas.';details.append(p);
+   details.append(makeButton(basis==='due'?'Ver compras feitas em '+planMonthName(month):'Ver faturas que vencem em '+planMonthName(month),()=>{
+    el('cardCategoryBasis').value=basis==='due'?'purchase':'due';drawCardCategoryPanel()
+   },'cardDueGo'));
+  }
+  const possible=[...new Set(cardCharges.filter(x=>card==='all'||x.card===card).map(x=>String(x[dateField]||'').slice(0,7)).filter(validMonth))].sort();
+  const next=possible.find(m=>m>month)||possible[possible.length-1];
+  if(next&&next!==month){
+   const p=document.createElement('p');p.className='foot';p.textContent='Há registros disponíveis em '+planMonthName(next)+'.';details.append(p);
+   details.append(makeButton('Ver '+planMonthName(next)+' no dashboard',()=>setCardAnalyticsMonth(next),'cardDueGo'));
+  }
+ }
 }
-el('cardCategoryMonth').addEventListener('change',drawCardCategoryPanel);
+
+el('cardCategoryMonth').addEventListener('change',()=>setCardAnalyticsMonth(el('cardCategoryMonth').value));
+el('cardCategoryBasis').addEventListener('change',drawCardCategoryPanel);
 el('cardCategoryFilter').addEventListener('change',drawCardCategoryPanel);
 el('dashboardMonth').value=localToday().slice(0,7);
 el('dashboardMonth').addEventListener('change',()=>{el('period').value='month';loadDashboard()});

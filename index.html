@@ -282,7 +282,13 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 .cardInvoiceRow strong{white-space:nowrap}
 @media(max-width:900px){#cardCategoryPanel .cardAnalyticsFilters{grid-template-columns:repeat(2,minmax(0,1fr))}#cardCategoryPanel .cardAnalyticsFilters label:first-child{grid-column:1/-1}}
 @media(max-width:480px){#cardCategoryPanel .cardAnalyticsFilters{grid-template-columns:1fr}#cardCategoryPanel .cardAnalyticsFilters label:first-child{grid-column:auto}.cardDueGroups{display:grid;grid-template-columns:1fr}.cardInvoiceRow strong{white-space:normal}}
-.historyDateControls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:10px 0 8px}.historyDateControls label{flex:0 1 260px;min-width:200px;margin:0;font-size:13px}.historyDateControls input{width:100%;min-height:44px;margin-top:7px}.historyDateControls button{min-height:44px;padding:10px 14px;white-space:normal}@media(max-width:480px){.historyDateControls{display:grid;grid-template-columns:1fr}.historyDateControls label,.historyDateControls button{width:100%;min-width:0;max-width:none}}</style></head><body>
+.historyDateControls{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:10px 0 8px}.historyDateControls label{flex:0 1 260px;min-width:200px;margin:0;font-size:13px}.historyDateControls input{width:100%;min-height:44px;margin-top:7px}.historyDateControls button{min-height:44px;padding:10px 14px;white-space:normal}@media(max-width:480px){.historyDateControls{display:grid;grid-template-columns:1fr}.historyDateControls label,.historyDateControls button{width:100%;min-width:0;max-width:none}}/* Mobile bottom navigation: viewport anchored, not part of the scrolling page. */
+@media(max-width:900px){
+  html,body{overflow-x:clip!important}
+  .sidebar{position:fixed!important;bottom:0!important;top:auto!important;transform:none!important;will-change:auto!important;overscroll-behavior:contain}
+  body.mobileKeyboardOpen .sidebar{visibility:hidden!important;pointer-events:none!important}
+}
+</style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="openNotificationCenter" class="notificationBell" type="button" title="Central de notificações" aria-label="Abrir central de notificações" hidden>🔔<span id="notificationCount" class="notificationCount" hidden>0</span></button><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openAlertsPanel" class="usersMenuButton">🔔 Central de notificações <span>›</span></button><button type="button" id="openWaPanel" class="usersMenuButton">💬 Agente WhatsApp <span>›</span></button><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="alertsOverlay" class="payOverlay" hidden>
  <div class="payModal alertsModal notificationCenterModal" role="dialog" aria-modal="true" aria-labelledby="alertsSettingsTitle">
@@ -1658,4 +1664,19 @@ el('expenseForm').addEventListener('submit',async e=>{
 });
 db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT')showUser(null)});
 try{const {data,error}=await db.auth.getSession();if(error)notify(error.message);else await showUser(data.session?.user||null)}catch(err){notify('Não foi possível iniciar: '+(err.message||'erro'))}
+
+// Keep mobile navigation out of the way while the on-screen keyboard is open.
+(function setupMobileKeyboardNavigation(){
+  const isEditable = target => target instanceof Element && !!target.closest('input,textarea,select,[contenteditable="true"]');
+  function syncKeyboardNavigation(){
+    const focused = isEditable(document.activeElement);
+    const viewport = window.visualViewport;
+    const keyboardVisible = !!viewport && (window.innerHeight - viewport.height > 140);
+    document.body.classList.toggle('mobileKeyboardOpen',window.innerWidth<=900 && focused && (keyboardVisible || !viewport));
+  }
+  document.addEventListener('focusin',()=>requestAnimationFrame(syncKeyboardNavigation));
+  document.addEventListener('focusout',()=>setTimeout(syncKeyboardNavigation,100));
+  window.visualViewport?.addEventListener('resize',syncKeyboardNavigation);
+  window.addEventListener('resize',syncKeyboardNavigation);
+})();
 </script></body></html>

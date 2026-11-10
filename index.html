@@ -288,6 +288,35 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
   .sidebar{position:fixed!important;bottom:0!important;top:auto!important;transform:none!important;will-change:auto!important;overscroll-behavior:contain}
   body.mobileKeyboardOpen .sidebar{visibility:hidden!important;pointer-events:none!important}
 }
+
+/* Clean, vertically stacked credit-card invoice list */
+.cardInvoiceToolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
+.cardInvoiceFilter{border:1px solid var(--border);background:var(--field);color:var(--text);border-radius:999px;padding:9px 15px;min-height:38px;font-size:13px;font-weight:700}
+.cardInvoiceFilter.active{background:var(--gold);color:#172451;border-color:var(--gold)}
+.cardInvoiceList{display:grid;gap:12px;margin-top:14px}
+.cardInvoice{background:var(--field);border:1px solid var(--border);border-radius:16px;padding:15px;min-width:0}
+.cardInvoice.isPaid{opacity:.83}
+.cardInvoiceTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cardInvoiceName{font-size:14px;font-weight:750;color:var(--text)}
+.cardInvoiceStatus{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#795b1b;color:#fff;white-space:nowrap}
+.cardInvoiceStatus.paid{background:#145c47}
+.cardInvoiceValue{font-size:clamp(24px,5vw,30px);line-height:1.2;font-weight:800;color:var(--gold);margin:10px 0 4px;font-variant-numeric:tabular-nums}
+.cardInvoiceMeta{font-size:12px;color:var(--muted);line-height:1.55}
+.cardInvoiceActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.cardInvoiceActions button{min-height:40px;font-size:13px;padding:9px 12px;flex:1 1 125px}
+.cardInvoiceActions .secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+.cardInvoiceDetails{margin-top:12px;border-top:1px solid var(--border);padding-top:10px}
+.cardInvoiceRow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cardInvoiceRow:last-child{border-bottom:0}
+.cardInvoiceRow span{min-width:0;overflow-wrap:anywhere}
+.cardInvoiceRow strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.cardInvoiceGroup{margin-top:20px}
+.cardInvoiceGroup h3{font-size:16px;margin:0 0 4px}
+.cardInvoiceHint{font-size:12px;color:var(--muted);margin:0 0 10px}
+.cardInvoiceOverview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.cardInvoiceOverview .metric{padding:14px}
+.cardInvoiceOverview strong{font-size:clamp(19px,4.5vw,26px)}
+@media(max-width:520px){.cardInvoice{padding:13px}.cardInvoiceOverview{grid-template-columns:1fr 1fr}.cardInvoiceActions button{flex:1 1 100%}}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="openNotificationCenter" class="notificationBell" type="button" title="Central de notificações" aria-label="Abrir central de notificações" hidden>🔔<span id="notificationCount" class="notificationCount" hidden>0</span></button><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openAlertsPanel" class="usersMenuButton">🔔 Central de notificações <span>›</span></button><button type="button" id="openWaPanel" class="usersMenuButton">💬 Agente WhatsApp <span>›</span></button><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="alertsOverlay" class="payOverlay" hidden>
@@ -1031,40 +1060,85 @@ el('cardPayForm').addEventListener('submit',async e=>{
   else notify('Erro ao conferir/pagar fatura: '+(err?.message||'erro'));
  }finally{button.disabled=false}
 });
+let cardInvoiceStatusFilter='open';
 function drawCards(){
  const target=el('cardsContent');target.replaceChildren();
- const summary=document.createElement('div');summary.className='stats';
- const totalLimit=Object.values(cardInfo).reduce((s,c)=>s+c.limit,0);
- const outstanding=cardCharges.filter(x=>!cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due)).reduce((s,x)=>s+Number(x.amount),0);
- const allCharges=cardCharges.reduce((s,x)=>s+Number(x.amount),0);const bankAvailable=Object.keys(cardInfo).map(card=>cardLimitSnapshots.find(x=>x.card===card)?.available_amount);const knownTotal=bankAvailable.every(x=>x!=null);
- for(const [label,value] of [['Limite total dos cartões',totalLimit],['Comprometido em faturas abertas',outstanding],['Disponível estimado (pelos lançamentos)',totalLimit-outstanding]]){
-  const cell=document.createElement('div');cell.className='metric';const name=document.createElement('small');name.textContent=label;const amount=document.createElement('strong');amount.textContent=money(value);cell.append(name,amount);summary.append(cell)
+ const openCharges=cardCharges.filter(x=>!cardPayments.some(p=>p.card===x.card&&p.statement_due===x.statement_due));
+ const totalOpen=openCharges.reduce((sum,x)=>sum+Number(x.amount),0);
+ const totalLimit=Object.values(cardInfo).reduce((sum,c)=>sum+c.limit,0);
+ const overview=document.createElement('div');overview.className='cardInvoiceOverview';
+ for(const [label,value] of [['Faturas em aberto',totalOpen],['Limite total cadastrado',totalLimit]]){
+  const metric=document.createElement('div');metric.className='metric';
+  const cap=document.createElement('small');cap.textContent=label;
+  const amount=document.createElement('strong');amount.textContent=money(value);
+  metric.append(cap,amount);overview.append(metric);
  }
- target.append(summary);
- const note=document.createElement('p');note.className='foot';note.textContent='Limite disponível estimado com base apenas nas faturas cadastradas. O limite real pode variar por autorizações, pagamentos ainda não processados e compras não importadas.';target.append(note);
-
+ target.append(overview);
+ const help=document.createElement('p');help.className='cardInvoiceHint';help.style.marginTop='9px';
+ help.textContent='Os valores são baseados nas compras registradas no GL Family. A conferência com a fatura do banco acontece ao pagar.';
+ target.append(help);
+ const filters=document.createElement('div');filters.className='cardInvoiceToolbar';filters.setAttribute('aria-label','Filtrar faturas');
+ for(const [key,label] of [['open','Em aberto'],['paid','Pagas'],['all','Todas']]){
+  const button=document.createElement('button');button.type='button';button.className='cardInvoiceFilter'+(cardInvoiceStatusFilter===key?' active':'');
+  button.setAttribute('aria-pressed',String(cardInvoiceStatusFilter===key));button.textContent=label;
+  button.onclick=()=>{cardInvoiceStatusFilter=key;drawCards()};
+  filters.append(button);
+ }
+ target.append(filters);
+ let visible=0;
  for(const [card,cfg] of Object.entries(cardInfo)){
- const box=document.createElement('div');box.className='card';box.style.margin='15px 0';
- const title=document.createElement('h3');title.textContent='Cartão '+cfg.label;box.append(title);
- const charges=cardCharges.filter(x=>x.card===card);
- const owing=charges.filter(x=>!cardPayments.some(p=>p.card===card&&p.statement_due===x.statement_due)).reduce((s,x)=>s+Number(x.amount),0);
- const bankReported=cardLimitSnapshots.find(x=>x.card===card)?.available_amount;const stats=document.createElement('div');stats.className='stats';
- for(const [label,value] of [['Limite',cfg.limit],['Gasto em aberto',owing],[bankReported==null?'Disponível estimado':'Disponível informado pelo banco',bankReported==null?cfg.limit-owing:Number(bankReported)]]){const cell=document.createElement('div');cell.className='metric';const cap=document.createElement('small');cap.textContent=label;const n=document.createElement('strong');n.textContent=money(value);cell.append(cap,n);stats.append(cell)}box.append(stats);if(bankReported!=null){const diff=cfg.limit-Number(bankReported)-owing;const p=document.createElement('p');p.className='foot';p.textContent='Diferença a conciliar com o banco: '+money(diff)+'. Limite disponível informado manualmente; atualize quando consultar o aplicativo do cartão.';box.append(p)}
- const subtitle=document.createElement('p');subtitle.textContent='Fecha dia '+cfg.closing+' · Vence dia '+cfg.due;box.append(subtitle);
- const groups=new Map();for(const x of cardCharges.filter(x=>x.card===card)){const rows=groups.get(x.statement_due)||[];rows.push(x);groups.set(x.statement_due,rows)}
- if(!groups.size){const p=document.createElement('p');p.textContent='Sem compras novas registradas neste cartão.';box.append(p)}
- for(const [due,items] of [...groups].sort((a,b)=>a[0].localeCompare(b[0]))){
- const total=items.reduce((sum,x)=>sum+Number(x.amount),0);
- const payment=cardPayments.find(x=>x.card===card&&x.statement_due===due);
- const section=document.createElement('details');section.className='installmentBox';section.style.marginTop='10px';
- const summary=document.createElement('summary');summary.className='installmentHead';summary.textContent='Fatura '+due+' · '+money(total)+(payment?' · Paga':' · Aberta');section.append(summary);
- const inner=document.createElement('div');inner.className='installmentInner';
- for(const x of items){const line=document.createElement('div');line.className='line';line.textContent=x.description+' '+x.installment_number+'/'+x.installment_total+' · '+money(x.amount)+' · '+(x.category_label||'Outros')+' · '+familyMemberName(x.family_member_id||x.recorded_by||x.owner_id);inner.append(line)}
- if(!payment){const pay=document.createElement('button');pay.textContent='Pagar fatura';pay.onclick=()=>openCardPayment(card,due,total,items.length);inner.append(pay)}
- section.append(inner);box.append(section)
+  const charges=cardCharges.filter(x=>x.card===card);
+  const groups=new Map();
+  for(const x of charges){const items=groups.get(x.statement_due)||[];items.push(x);groups.set(x.statement_due,items)}
+  const entries=[...groups].sort((a,b)=>a[0].localeCompare(b[0])).filter(([due])=>{
+   const paid=cardPayments.some(p=>p.card===card&&p.statement_due===due);
+   return cardInvoiceStatusFilter==='all'||(cardInvoiceStatusFilter==='paid'?paid:!paid);
+  });
+  if(!entries.length)continue;
+  visible+=entries.length;
+  const group=document.createElement('section');group.className='cardInvoiceGroup';
+  const heading=document.createElement('h3');heading.textContent=cfg.label;
+  const subtitle=document.createElement('p');subtitle.className='cardInvoiceHint';
+  subtitle.textContent='Fecha dia '+cfg.closing+' · vence dia '+cfg.due;
+  const list=document.createElement('div');list.className='cardInvoiceList';
+  for(const [due,items] of entries){
+   const total=items.reduce((sum,x)=>sum+Number(x.amount),0);
+   const payment=cardPayments.find(x=>x.card===card&&x.statement_due===due);
+   const box=document.createElement('article');box.className='cardInvoice'+(payment?' isPaid':'');
+   const top=document.createElement('div');top.className='cardInvoiceTop';
+   const name=document.createElement('span');name.className='cardInvoiceName';name.textContent='Fatura de '+new Date(due+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+   const status=document.createElement('span');status.className='cardInvoiceStatus'+(payment?' paid':'');
+   status.textContent=payment?'Paga':'Em aberto';top.append(name,status);
+   const value=document.createElement('div');value.className='cardInvoiceValue';value.textContent=money(payment?Number(payment.amount):total);
+   const meta=document.createElement('div');meta.className='cardInvoiceMeta';
+   meta.textContent='Vencimento: '+billBrazilDate(due)+' · '+items.length+' compra(s)'+(payment?' · Valor registrado no pagamento':'');
+   const actions=document.createElement('div');actions.className='cardInvoiceActions';
+   if(!payment){
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Conferir e pagar';
+    pay.onclick=()=>openCardPayment(card,due,total,items.length);actions.append(pay);
+   }
+   const detailButton=document.createElement('button');detailButton.type='button';detailButton.className='secondary';detailButton.textContent='Ver compras';
+   const details=document.createElement('div');details.className='cardInvoiceDetails';details.hidden=true;
+   detailButton.setAttribute('aria-expanded','false');
+   detailButton.onclick=()=>{details.hidden=!details.hidden;detailButton.textContent=details.hidden?'Ver compras':'Ocultar compras';detailButton.setAttribute('aria-expanded',String(!details.hidden))};
+   for(const x of items){
+    const row=document.createElement('div');row.className='cardInvoiceRow';
+    const description=document.createElement('span');
+    description.textContent=x.description+(x.installment_total>1?' · '+x.installment_number+'/'+x.installment_total:'')+' · '+(x.category_label||'Outros');
+    const amount=document.createElement('strong');amount.textContent=money(x.amount);row.append(description,amount);details.append(row);
+   }
+   if(payment&&Math.abs(Number(payment.reconciliation_delta||0))>=0.005){
+    const extra=document.createElement('p');extra.className='cardInvoiceHint';
+    extra.textContent='Conciliação: '+(Number(payment.reconciliation_delta)>0?'+':'')+money(Number(payment.reconciliation_delta))+(payment.reconciliation_note?' · '+payment.reconciliation_note:'');
+    details.append(extra);
+   }
+   actions.append(detailButton);box.append(top,value,meta,actions,details);list.append(box);
+  }
+  group.append(heading,subtitle,list);target.append(group);
  }
- target.append(box)
- }
+ if(!visible){const empty=document.createElement('p');empty.className='cardInvoiceHint';
+ empty.textContent=cardInvoiceStatusFilter==='open'?'Nenhuma fatura em aberto.':cardInvoiceStatusFilter==='paid'?'Ainda não há faturas pagas registradas.':'Ainda não há faturas cadastradas.';
+ target.append(empty)}
 }
 let installmentBills=[],installmentTransactions=[];
 async function loadInstallments(){

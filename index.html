@@ -362,11 +362,11 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 <div id="newCategoryOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="newCategoryTitle"><h2 id="newCategoryTitle">Adicionar categoria</h2><p>Crie uma categoria para usar nos próximos lançamentos.</p><form id="newCategoryForm"><label>Nome da categoria<input id="newCategoryName" maxlength="60" minlength="2" placeholder="Ex.: Pets, Viagens, Presentes" required></label><div class="payActions"><button type="button" id="cancelNewCategory" style="background:#536e9d;color:white">Cancelar</button><button type="submit" id="saveNewCategory">Adicionar</button></div></form></div></div><div id="payOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="payTitle"><h2 id="payTitle">Quitar parcela</h2><p id="payDescription"></p><div id="payDetails" class="payDetails"></div><form id="payForm"><label>Valor efetivamente pago (R$)<input id="payAmount" type="number" step="0.01" min="0.01" required></label><label>Forma de pagamento<select id="payMethod" required><option value="">Selecione como pagou</option><option value="pix">Pix</option><option value="transferencia">Transferência bancária</option><option value="boleto">Boleto bancário</option><option value="debito">Cartão de débito</option><option value="dinheiro">Dinheiro</option><option value="outros">Outros</option></select></label><label>Categoria<select id="payCategory" required><option value="">Selecione</option><option>Supermercado</option><option>Alimentação</option><option>Moradia</option><option>Contas da casa</option><option>Transporte</option><option>Veículo</option><option>Saúde</option><option>Educação</option><option>Lazer</option><option>Assinaturas</option><option>Compras</option><option>Outros</option></select></label><div class="payDetails">Juros e encargos: <strong id="payInterest">R$ 0,00</strong><p class="foot">A quitação entra no dashboard e no histórico como gasto realizado hoje.</p></div><div class="payActions"><button type="button" id="cancelPay" style="background:#536e9d;color:white">Cancelar</button><button type="submit" id="confirmPay">Confirmar quitação</button></div></form></div></div><div id="cardPayOverlay" class="payOverlay" hidden><div class="payModal" role="dialog" aria-modal="true" aria-labelledby="cardPayTitle"><h2 id="cardPayTitle">Pagar fatura</h2><p id="cardPayDescription"></p><div class="payDetails" id="cardPayDetails"></div>
 <div class="payDetails" style="margin-top:12px">
   <strong>Conferência da fatura</strong>
-  <p class="foot">Anexe a fatura oficial do cartão (PDF ou imagem, até 10 MB) e informe o valor total exibido nela. Compare antes de quitar; a diferença será registrada separadamente, sem duplicar compras.</p>
-  <label>Fatura do banco (obrigatória)<input type="file" id="cardStatementFile" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+  <p class="foot">Use a fatura bancária para conferir compras com IA. Compras ausentes são registradas diretamente no cartão. Para marcar a fatura como paga, confirme o valor abaixo; não é preciso enviar o arquivo uma segunda vez.</p>
+  <label>Fatura para conferência com IA (opcional ao pagar)<input type="file" id="cardStatementFile" accept="application/pdf,image/jpeg,image/png,image/webp"></label>
   <button type="button" id="cardStatementAiButton" class="planSecondary" style="width:100%;margin-top:10px">Analisar fatura com IA</button>
   <div id="cardStatementAiReport" class="payDetails" hidden aria-live="polite"></div>
-  <label>Total da fatura no banco (R$)<input type="number" id="cardStatementTotal" step="0.01" min="0.01" required placeholder="Valor total impresso na fatura"></label>
+  <label>Total da fatura no banco (R$)<input type="number" id="cardStatementTotal" step="0.01" min="0.01" placeholder="Valor total impresso na fatura"></label>
   <div id="cardStatementComparison" class="payDetails" aria-live="polite">Envie a fatura e informe seu total para conferir.</div>
   <label id="cardReconciliationNoteWrap" hidden>Descrição da diferença<input id="cardReconciliationNote" maxlength="240" placeholder="Ex.: compra ausente, estorno, tarifa ou ajuste"></label>
 </div>
@@ -440,8 +440,8 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
   <div id="installmentsList"></div>
  </div>
 </div>
-<div class="card billListCard">
- <div class="billSectionHead"><div><h3>Faturas de cartões</h3><p class="foot">Faturas Nubank e Santander em aberto. Registre a quitação aqui, sem precisar abrir Cartões e sem duplicar despesas.</p></div><button id="billGoCards" class="planSecondary" type="button">Ir para cartões</button></div>
+<div class="card billListCard" id="billCardSection" hidden>
+ <div class="billSectionHead"><div><h3>Faturas de cartões</h3><p class="foot">Faturas gerenciadas exclusivamente na aba Cartões, sem criar contas a pagar adicionais.</p></div><button id="billGoCards" class="planSecondary" type="button">Ir para cartões</button></div>
  <div id="billCardList" class="planRows" aria-live="polite"></div>
 </div>
 </section><section id="cardsPage" hidden><h2>Cartões</h2><p>Compras e faturas separadas. Pagar uma fatura não cria outro gasto.</p><div id="cardsContent"></div></section><section id="history" hidden><div class="card"><h2>Lançamentos</h2><p>Consulte seus lançamentos por data e gerencie os pagamentos.</p><div class="historyDateControls"><label for="historyDate">Data do lançamento<input id="historyDate" type="date" aria-describedby="historyDateHint"></label><button id="historyClearDate" class="planSecondary" type="button" disabled>Mostrar todas as datas</button></div><p id="historyDateHint" class="foot">O filtro usa a data exibida em cada lançamento. Sem data selecionada, aparecem os registros mais recentes.</p><p id="historySummary" class="foot" aria-live="polite"></p><div id="historyRows"></div></div></section><section id="launch" hidden><div class="card" style="max-width:620px"><h2>Registrar gasto</h2><p>Preencha os dados para categorizar o pagamento.</p><div class="card" style="margin-bottom:16px"><h3>Comprovante por foto</h3><input id="receiptFile" type="file" accept="image/*" capture="environment"><img id="receiptPreview" alt="Prévia" hidden style="max-width:100%;max-height:220px;margin-top:12px"><button id="readReceipt" type="button" disabled style="margin-top:12px">Ler foto com IA</button><p class="foot">Confira os dados identificados antes de salvar.</p></div><form id="expenseForm">
@@ -1019,6 +1019,8 @@ async function statementAsDataURL(file){
  return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Falha ao abrir arquivo'));reader.readAsDataURL(file)});
 }
 let aiStatementResult=null;
+const statementSessionFiles=new Map();
+const statementSessionKey=(card,due)=>card+"|"+due;
 function addReportSection(parent,title,rows){
  const h=document.createElement('h4');h.textContent=title;h.style.margin='12px 0 5px';parent.append(h);
  if(!rows.length){const p=document.createElement('p');p.className='foot';p.textContent='Nenhum item identificado.';parent.append(p);return}
@@ -1033,8 +1035,8 @@ el('cardStatementFile').addEventListener('change',()=>{
 });
 el('cardStatementAiButton').addEventListener('click',async()=>{
  const p=activeCardPayment;if(!p)return;
- const file=el('cardStatementFile').files?.[0];
- if(!file){notify('Anexe o PDF ou imagem da fatura para analisar com IA.');return}
+ const file=el('cardStatementFile').files?.[0]||statementSessionFiles.get(statementSessionKey(p.card,p.due));
+ if(!file){notify('Anexe a fatura uma vez para a IA conferir.');return}
  if(!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)){notify('Use PDF, JPEG, PNG ou WebP.');return}
  const btn=el('cardStatementAiButton'),report=el('cardStatementAiReport');
  btn.disabled=true;btn.textContent='IA analisando lançamentos...';report.hidden=false;report.textContent='Lendo fatura e comparando compras. Nenhuma alteração será gravada automaticamente.';
@@ -1086,9 +1088,10 @@ if(pendingBank.length){
     el('cardPayDetails').textContent='Vencimento: '+p.due+' · Valor registrado atualizado: '+money(p.total)+' · Pagamento: hoje';
     updateCardStatementComparison();
     row.remove();
-    if(!report.querySelector('.cardInvoiceRow'))tip.textContent='Compras registradas. Confira o total da fatura antes de pagar.';
     if(!el('dashboard').hidden)await loadDashboard();
-    notify('Gasto registrado diretamente na fatura e pendência encerrada.');
+    if(!el('billsPage').hidden)await loadBillPage();
+    closeCardPayment();
+    notify('Gasto registrado em '+(cardInfo[p.card]?.label||p.card)+' · '+money(amount)+'. Total da fatura atualizado. Conferência encerrada.');
    }catch(err){notify('Não foi possível registrar a compra: '+(err.message||'erro'));button.disabled=false}
   };
   row.append(description,button);report.append(row);
@@ -1114,13 +1117,13 @@ function openCardPayment(card,due,total,count){
  el('cardPayDetails').textContent='Vencimento: '+due+' · '+count+' lançamento(s) · Valor previsto: '+money(total)+' · Pagamento: hoje';
  el('cardStatementFile').value='';
  aiStatementResult=null;el('cardStatementAiReport').hidden=true;el('cardStatementAiReport').replaceChildren();
- el('cardStatementTotal').value='';
+ el('cardStatementTotal').value=Number(total).toFixed(2);
  el('cardReconciliationNote').value='';
  el('cardReconciliationNoteWrap').hidden=true;
  el('cardPayAmount').value=Number(total).toFixed(2);
  updateCardStatementComparison();
  el('cardPayOverlay').hidden=false;
- el('cardStatementFile').focus();
+ el('cardStatementAiButton').focus();
 }
 el('cardStatementTotal').addEventListener('input',updateCardStatementComparison);
 el('cardPayAmount').addEventListener('input',updateCardPayInterest);
@@ -1131,11 +1134,11 @@ el('cardPayForm').addEventListener('submit',async e=>{
  e.preventDefault();
  const p=activeCardPayment;if(!p)return;
  const amount=Number(el('cardPayAmount').value),bank=Number(el('cardStatementTotal').value);
- const file=el('cardStatementFile').files?.[0];
+ const file=el('cardStatementFile').files?.[0]||statementSessionFiles.get(statementSessionKey(p.card,p.due))||null;
  const diff=(cents(bank)-cents(p.total))/100;
  const note=el('cardReconciliationNote').value.trim();
- if(!file||!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10485760||file.size===0){
-  notify('Anexe a fatura em PDF ou imagem de até 10 MB.');return;
+ if(file&&(!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10485760||file.size===0)){
+  notify('Use PDF ou imagem de até 10 MB.');return;
  }
  if(!Number.isFinite(bank)||bank<=0||!Number.isFinite(amount)||amount<bank){
   notify('Confira o total da fatura do banco. O pagamento deve ser integral ou maior; parcial ainda não é suportado.');return;
@@ -1148,10 +1151,12 @@ el('cardPayForm').addEventListener('submit',async e=>{
  try{
   const {data:userData,error:authError}=await db.auth.getUser();if(authError||!userData?.user)throw Error('Sessão expirada. Entre novamente.');
   const userId=userData.user.id;
-  const safeExtension=file.type==='application/pdf'?'pdf':file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
-  uploadedPath=userId+'/'+p.card+'/'+p.due+'/'+crypto.randomUUID()+'.'+safeExtension;
-  const upload=await db.storage.from('family-card-statements').upload(uploadedPath,file,{contentType:file.type,upsert:false});
-  if(upload.error)throw upload.error;
+  if(file){
+   const safeExtension=file.type==='application/pdf'?'pdf':file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+   uploadedPath=userId+'/'+p.card+'/'+p.due+'/'+crypto.randomUUID()+'.'+safeExtension;
+   const upload=await db.storage.from('family-card-statements').upload(uploadedPath,file,{contentType:file.type,upsert:false});
+   if(upload.error)throw upload.error;
+  }
   const {error}=await db.from('family_card_payments').insert({
    card:p.card,statement_due:p.due,amount,expected_amount:p.total,bank_statement_amount:bank,
    reconciliation_delta:diff,reconciliation_note:Math.abs(diff)<0.005?null:note,
@@ -1159,13 +1164,14 @@ el('cardPayForm').addEventListener('submit',async e=>{
   });
   if(error)throw error;
   uploadedPath=null;
+  statementSessionFiles.delete(statementSessionKey(p.card,p.due));
   closeCardPayment();
   await loadCards();
   if(!el('billsPage').hidden)await loadBillPage();
   if(!el('dashboard').hidden)await loadDashboard();
-  notify('Fatura '+(cardInfo[p.card]?.label||p.card)+' quitada: '+money(amount)+
+  notify('Pagamento registrado para a fatura '+(cardInfo[p.card]?.label||p.card)+': '+money(amount)+
    (Math.abs(diff)>=0.005?' · diferença conciliada '+money(diff):' · valores conferidos')+
-   (interest>0?' · juros '+money(interest):'')+'. Documento salvo sem duplicar compras.');
+   (interest>0?' · juros '+money(interest):'')+(file?'. Documento salvo sem duplicar compras.':'. Sem duplicar compras.'));
  }catch(err){
   if(uploadedPath)await db.storage.from('family-card-statements').remove([uploadedPath]);
   if(err?.code==='23505'){closeCardPayment();await loadCards();notify('Esta fatura já possui pagamento. Dados atualizados para evitar duplicidade.')}

@@ -754,8 +754,8 @@ function buildNotificationItems(entries,month){
   item.amount+=Number(x.amount);cardBalances.set(key,item);
  }
  for(const x of cardPayments){
-  const key=x.card+'|'+x.statement_due,item=cardBalances.get(key);
-  if(item)item.amount-=Number(x.amount);
+  // A paid statement must not return as a new alert because of a reconciliation difference.
+  cardBalances.delete(x.card+'|'+x.statement_due);
  }
  due.push(...[...cardBalances.values()].filter(x=>x.amount>0.01));
  for(const x of due){
@@ -1324,10 +1324,11 @@ function dashboardStatementRows(){
   const actual=Number(payment.amount)||0,interest=Number(payment.interest_paid)||0;
   row.amount_paid+=actual;row.interest_paid+=interest;
   row.settled+=Math.max(0,Number(payment.expected_amount??(actual-interest))||0);
+  row.payment_recorded=true;
  }
  return [...groups.values()].map(row=>({...row,
-  outstanding:Math.max(0,Math.round((row.amount-Math.min(row.amount,row.settled))*100)/100),
-  status:row.settled+0.009>=row.amount?'paid':'planned'
+  outstanding:row.payment_recorded?0:Math.max(0,Math.round((row.amount-Math.min(row.amount,row.settled))*100)/100),
+  status:row.payment_recorded||row.settled+0.009>=row.amount?'paid':'planned'
  }));
 }
 
@@ -1718,8 +1719,8 @@ function cardOpenStatements(){
   statements.set(key,item);
  }
  for(const payment of cardPayments){
-  const item=statements.get(payment.card+'|'+payment.statement_due);
-  if(item)item.amount-=Number(payment.amount)||0;
+  // A recorded full statement payment closes the bill; bank/app differences remain in reconciliation.
+  statements.delete(payment.card+'|'+payment.statement_due);
  }
  return [...statements.values()].map(x=>({...x,amount:Math.round(Math.max(0,x.amount)*100)/100}))
   .filter(x=>x.amount>0.009);

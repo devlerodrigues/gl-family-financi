@@ -275,10 +275,14 @@ async function handleOne(db:any,message:any,phoneId:string){
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:diagnosticsCors});
  const secret=Deno.env.get('META_APP_SECRET');
- const verify=Deno.env.get('META_VERIFY_TOKEN')||'glfamily-meta-verify-2026-b83f5c9a2e71';
+ const verify=Deno.env.get('META_VERIFY_TOKEN');
  const u=new URL(req.url);
  if(req.method==='GET'){
-  if(u.searchParams.get('hub.mode')==='subscribe'&&u.searchParams.get('hub.verify_token')===verify)return plain(u.searchParams.get('hub.challenge')||'');
+  if(u.searchParams.get('hub.mode')==='subscribe'){
+   if(!verify)return plain('Webhook verification not configured',503);
+   if(u.searchParams.get('hub.verify_token')===verify)return plain(u.searchParams.get('hub.challenge')||'');
+   return plain('Forbidden',403);
+  }
   if(u.searchParams.get('diagnostic')==='status')return metaDiagnostic(req,false);
   return plain('Forbidden',403);
  }

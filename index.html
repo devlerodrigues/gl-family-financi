@@ -1077,7 +1077,7 @@ if(pendingBank.length){
    if(!confirm('Registrar '+money(amount)+' em '+p.card.toUpperCase()+' na fatura '+p.due+'? Não será criada uma conta a pagar.'))return;
    button.disabled=true;
    try{
-    const date= /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date||'')?item.date:localToday();
+    const date= /^\d{4}-\d{2}-\d{2}$/.test(item.date||'')?item.date:localToday();
     const {error}=await db.from('family_card_charges').insert({card:p.card,description:description.slice(0,200),category_label:'Outros',amount,purchase_date:date,installment_number:1,installment_total:1,statement_due:p.due});
     if(error)throw error;
     const ok=await loadCards();if(!ok)throw Error('Compra salva, mas não foi possível atualizar a tela.');

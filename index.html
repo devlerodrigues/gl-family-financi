@@ -349,6 +349,8 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
   <strong>Conferência da fatura</strong>
   <p class="foot">Anexe a fatura oficial do cartão (PDF ou imagem, até 10 MB) e informe o valor total exibido nela. Compare antes de quitar; a diferença será registrada separadamente, sem duplicar compras.</p>
   <label>Fatura do banco (obrigatória)<input type="file" id="cardStatementFile" accept="application/pdf,image/jpeg,image/png,image/webp" required></label>
+  <button type="button" id="cardStatementAiButton" class="planSecondary" style="width:100%;margin-top:10px">Analisar fatura com IA</button>
+  <div id="cardStatementAiReport" class="payDetails" hidden aria-live="polite"></div>
   <label>Total da fatura no banco (R$)<input type="number" id="cardStatementTotal" step="0.01" min="0.01" required placeholder="Valor total impresso na fatura"></label>
   <div id="cardStatementComparison" class="payDetails" aria-live="polite">Envie a fatura e informe seu total para conferir.</div>
   <label id="cardReconciliationNoteWrap" hidden>Descrição da diferença<input id="cardReconciliationNote" maxlength="240" placeholder="Ex.: compra ausente, estorno, tarifa ou ajuste"></label>
@@ -997,11 +999,69 @@ function updateCardStatementComparison(){
  if(ready)el('cardPayAmount').value=amount.toFixed(2);
  updateCardPayInterest();
 }
+async function statementAsDataURL(file){
+ if(file.size>10485760)throw Error('Fatura acima de 10 MB.');
+ return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('Falha ao abrir arquivo'));reader.readAsDataURL(file)});
+}
+let aiStatementResult=null;
+function addReportSection(parent,title,rows){
+ const h=document.createElement('h4');h.textContent=title;h.style.margin='12px 0 5px';parent.append(h);
+ if(!rows.length){const p=document.createElement('p');p.className='foot';p.textContent='Nenhum item identificado.';parent.append(p);return}
+ for(const row of rows.slice(0,25)){const item=document.createElement('div');item.className='cardInvoiceRow';
+ const name=document.createElement('span');name.textContent=row.description||'Sem descrição';
+ const value=document.createElement('strong');value.textContent=money(Number(row.amount));item.append(name,value);parent.append(item)}
+ if(rows.length>25){const p=document.createElement('p');p.className='foot';p.textContent='Mais '+(rows.length-25)+' itens. Revise a fatura original.';parent.append(p)}
+}
+el('cardStatementFile').addEventListener('change',()=>{
+ aiStatementResult=null;el('cardStatementAiReport').hidden=true;
+ el('cardStatementAiReport').replaceChildren();
+});
+el('cardStatementAiButton').addEventListener('click',async()=>{
+ const p=activeCardPayment;if(!p)return;
+ const file=el('cardStatementFile').files?.[0];
+ if(!file){notify('Anexe o PDF ou imagem da fatura para analisar com IA.');return}
+ if(!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)){notify('Use PDF, JPEG, PNG ou WebP.');return}
+ const btn=el('cardStatementAiButton'),report=el('cardStatementAiReport');
+ btn.disabled=true;btn.textContent='IA analisando lançamentos...';report.hidden=false;report.textContent='Lendo fatura e comparando compras. Nenhuma alteração será gravada automaticamente.';
+ try{
+  const fileData=await statementAsDataURL(file);
+  const charges=cardCharges.filter(x=>x.card===p.card&&x.statement_due===p.due).map(x=>({description:x.description,amount:Number(x.amount),purchase_date:x.purchase_date}));
+  const {data,error}=await db.functions.invoke('analyze-card-statement',{body:{file:fileData,card:p.card,due:p.due,charges}});
+  if(error||data?.error)throw Error(data?.error||error?.message||'Falha na análise');
+  if(!activeCardPayment||activeCardPayment.card!==p.card||activeCardPayment.due!==p.due)return;
+  aiStatementResult=data;report.replaceChildren();
+  const title=document.createElement('strong');title.textContent='Resultado da IA · '+data.matched+' compra(s) conciliada(s)';report.append(title);
+  const info=document.createElement('p');info.className='foot';
+  info.textContent='Fatura: '+(data.bank_total==null?'total não identificado':money(data.bank_total))+' · GL Family: '+money(data.app_total)+' · Itens lidos: '+data.bank_lines_count;
+  report.append(info);
+  if(data.bank_total>0){
+   el('cardStatementTotal').value=Number(data.bank_total).toFixed(2);
+   updateCardStatementComparison();
+  }
+  const warn=document.createElement('p');warn.className='foot';
+  warn.textContent=data.complete?'IA concluiu a leitura declarada; confira o documento para confirmar.':'ATENÇÃO: leitura possivelmente incompleta. Revise o PDF antes de pagar.';
+  report.append(warn);
+  if(data.bank_due&&data.bank_due!==p.due){const w=document.createElement('p');w.className='foot';w.textContent='Atenção: vencimento identificado '+data.bank_due+' difere do vencimento cadastrado '+p.due+'.';report.append(w)}
+  if(data.warning){const w=document.createElement('p');w.className='foot';w.textContent=data.warning;report.append(w)}
+  addReportSection(report,'Na fatura, mas sem correspondência no GL Family',data.bank_only||[]);
+  addReportSection(report,'No GL Family, mas sem correspondência na fatura',data.app_only||[]);
+  if(data.bank_total!=null&&Math.abs(Number(data.bank_total)-Number(data.bank_lines_sum))>0.01){
+   const w=document.createElement('p');w.className='foot';w.textContent='O total das linhas extraídas não fecha com o total do banco. Pode haver tarifas, créditos ou lançamentos não lidos.';report.append(w)
+  }
+  if(data.flagged===0&&data.complete&&data.bank_total!=null&&Math.abs(Number(data.bank_total)-Number(data.app_total))<0.01){notify('IA concluiu a conferência sem divergências aparentes. Confira antes de pagar.')}
+  else notify('IA concluiu a análise e sinalizou itens para revisão. Nenhuma compra foi criada automaticamente.');
+  if(data.flagged>0&&!el('cardReconciliationNote').value){
+   el('cardReconciliationNote').value='Divergências sinalizadas pela IA; revisar itens não pareados.';
+  }
+ }catch(err){report.textContent='Não foi possível analisar automaticamente: '+(err?.message||'erro')+'. Confira os valores manualmente.';notify('Análise de IA indisponível. Conferência manual continua disponível.')}
+ finally{btn.disabled=false;btn.textContent='Analisar fatura com IA'}
+});
 function openCardPayment(card,due,total,count){
  activeCardPayment={card,due,total};
  el('cardPayDescription').textContent='Cartão '+cardInfo[card].label;
  el('cardPayDetails').textContent='Vencimento: '+due+' · '+count+' lançamento(s) · Valor previsto: '+money(total)+' · Pagamento: hoje';
  el('cardStatementFile').value='';
+ aiStatementResult=null;el('cardStatementAiReport').hidden=true;el('cardStatementAiReport').replaceChildren();
  el('cardStatementTotal').value='';
  el('cardReconciliationNote').value='';
  el('cardReconciliationNoteWrap').hidden=true;

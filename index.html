@@ -317,6 +317,21 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
 .cardInvoiceOverview .metric{padding:14px}
 .cardInvoiceOverview strong{font-size:clamp(19px,4.5vw,26px)}
 @media(max-width:520px){.cardInvoice{padding:13px}.cardInvoiceOverview{grid-template-columns:1fr 1fr}.cardInvoiceActions button{flex:1 1 100%}}
+
+/* Dashboard commitments: mobile rows must never squeeze money or pay buttons. */
+#dueInstallments .dueRow{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px;padding:14px 0}
+#dueInstallments .dueRow>div{min-width:0}
+#dueInstallments .dueRow>div:first-child span{display:block;white-space:normal;overflow-wrap:break-word;word-break:normal}
+#dueInstallments .dueRow>div:first-child small{display:block;font-size:12px;line-height:1.45}
+#dueInstallments .dueRow>div:last-child{min-width:114px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;text-align:right}
+#dueInstallments .dueRow strong{display:block;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;font-variant-numeric:tabular-nums;font-size:15px}
+#dueInstallments .dueRow button{display:inline-flex;width:auto;min-width:94px;min-height:40px;align-items:center;justify-content:center;white-space:nowrap;overflow-wrap:normal;word-break:keep-all;padding:9px 12px;font-size:13px}
+@media(max-width:600px){
+ #dueInstallments .dueRow{grid-template-columns:minmax(0,1fr);gap:9px;padding:14px 0}
+ #dueInstallments .dueRow>div:last-child{min-width:0;width:100%;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;text-align:left}
+ #dueInstallments .dueRow strong{font-size:17px}
+ #dueInstallments .dueRow button{flex:0 0 auto}
+}
 </style></head><body>
 <header><div><h1>GL Family</h1><small>Controle de gastos</small></div><div class="accountActions"><button id="openNotificationCenter" class="notificationBell" type="button" title="Central de notificações" aria-label="Abrir central de notificações" hidden>🔔<span id="notificationCount" class="notificationCount" hidden>0</span></button><button id="accountThemeToggle" type="button" aria-expanded="false" aria-controls="accountThemePanel" title="Temas da conta">⚙ Conta</button><button id="logout" hidden>Sair</button><div id="accountThemePanel" class="themePanel" hidden><strong>Aparência da conta</strong><p>Escolha um tema</p><div class="themeSwatches" role="group" aria-label="Tema de cores"><button type="button" class="themeSwatch" data-theme-choice="pop" aria-label="Pop Fintech" title="Pop Fintech"><span style="background:#0F172A"></span><span style="background:#FACC15"></span><span style="background:#EC4899"></span></button><button type="button" class="themeSwatch" data-theme-choice="corporate" aria-label="Corporate Trust" title="Corporate Trust"><span style="background:#F2F5F8"></span><span style="background:#0B1F3B"></span><span style="background:#2563EB"></span></button><button type="button" class="themeSwatch" data-theme-choice="premium" aria-label="Premium Wealth" title="Premium Wealth"><span style="background:#FAF7F1"></span><span style="background:#0E3B2E"></span><span style="background:#0D9488"></span></button></div><small id="selectedThemeLabel">Pop Fintech</small><div class="accountDivider"></div><button type="button" id="openAlertsPanel" class="usersMenuButton">🔔 Central de notificações <span>›</span></button><button type="button" id="openWaPanel" class="usersMenuButton">💬 Agente WhatsApp <span>›</span></button><button type="button" id="openUsersPanel" class="usersMenuButton">👥 Gerenciar usuários <span>›</span></button></div></div></header>
 <div id="alertsOverlay" class="payOverlay" hidden>
@@ -352,7 +367,7 @@ html[data-theme="premium"] .metric strong{color:#0D9488}
   <button type="button" id="cardStatementAiButton" class="planSecondary" style="width:100%;margin-top:10px">Analisar fatura com IA</button>
   <div id="cardStatementAiReport" class="payDetails" hidden aria-live="polite"></div>
   <label>Total da fatura no banco (R$)<input type="number" id="cardStatementTotal" step="0.01" min="0.01" required placeholder="Valor total impresso na fatura"></label>
-  <div id="cardStatementComparison" class="payDetails" aria-live="polite">Envie a fatura e informe seu total para conferir.</div><button id="cardStatementAnalyze" type="button" class="planSecondary" style="width:100%;margin-top:10px">Analisar fatura com IA</button><div id="cardStatementAIResult" class="payDetails" style="margin-top:10px" hidden aria-live="polite"></div>
+  <div id="cardStatementComparison" class="payDetails" aria-live="polite">Envie a fatura e informe seu total para conferir.</div>
   <label id="cardReconciliationNoteWrap" hidden>Descrição da diferença<input id="cardReconciliationNote" maxlength="240" placeholder="Ex.: compra ausente, estorno, tarifa ou ajuste"></label>
 </div>
 <form id="cardPayForm"><label>Valor efetivamente pago (R$)<input id="cardPayAmount" type="number" min="0.01" step="0.01" required></label><div class="payDetails">Juros e encargos: <strong id="cardPayInterest">R$ 0,00</strong><p class="foot">A quitação é registrada no GL Family e não duplica as compras. O aplicativo não realiza pagamentos no banco.</p></div><div class="payActions"><button type="button" id="cardPayCancel" style="background:#536e9d;color:white">Cancelar</button><button id="cardPayConfirm" type="submit">Confirmar pagamento</button></div></form></div></div><main>
@@ -1043,7 +1058,44 @@ el('cardStatementAiButton').addEventListener('click',async()=>{
   report.append(warn);
   if(data.bank_due&&data.bank_due!==p.due){const w=document.createElement('p');w.className='foot';w.textContent='Atenção: vencimento identificado '+data.bank_due+' difere do vencimento cadastrado '+p.due+'.';report.append(w)}
   if(data.warning){const w=document.createElement('p');w.className='foot';w.textContent=data.warning;report.append(w)}
-  addReportSection(report,'Na fatura, mas sem correspondência no GL Family',data.bank_only||[]);
+  const pendingBank=(data.bank_only||[]).filter(x=>Number(x.amount)>0);
+if(pendingBank.length){
+ const head=document.createElement('h4');head.textContent='Compras do banco que faltam no aplicativo';head.style.margin='12px 0 8px';report.append(head);
+ const tip=document.createElement('p');tip.className='foot';tip.textContent='Toque em Registrar, informe o que foi gasto e confirme. O gasto entra diretamente nesta fatura, sem criar uma conta a pagar.';report.append(tip);
+ for(const item of pendingBank.slice(0,50)){
+  const row=document.createElement('div');row.className='cardInvoiceRow';row.style.alignItems='center';row.style.flexWrap='wrap';
+  const description=document.createElement('span');description.textContent=(item.description||'Compra não identificada')+' · '+money(Number(item.amount));
+  const button=document.createElement('button');button.type='button';button.textContent='Registrar';button.className='planSecondary';button.style.minHeight='36px';button.style.whiteSpace='nowrap';button.style.flexShrink='0';
+  button.onclick=async()=>{
+   if(!activeCardPayment||activeCardPayment.card!==p.card||activeCardPayment.due!==p.due)return;
+   const amount=Number(item.amount);
+   if(!Number.isFinite(amount)||amount<=0)return notify('Confira o valor do lançamento.');
+   const name=prompt('O que foi gasto? Descreva esta compra:',String(item.description||'').trim());
+   if(name===null)return;
+   const description=name.trim();
+   if(description.length<2)return notify('Informe uma descrição válida do gasto.');
+   if(!confirm('Registrar '+money(amount)+' em '+p.card.toUpperCase()+' na fatura '+p.due+'? Não será criada uma conta a pagar.'))return;
+   button.disabled=true;
+   try{
+    const date= /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date||'')?item.date:localToday();
+    const {error}=await db.from('family_card_charges').insert({card:p.card,description:description.slice(0,200),category_label:'Outros',amount,purchase_date:date,installment_number:1,installment_total:1,statement_due:p.due});
+    if(error)throw error;
+    const ok=await loadCards();if(!ok)throw Error('Compra salva, mas não foi possível atualizar a tela.');
+    const nextTotal=cardCharges.filter(x=>x.card===p.card&&x.statement_due===p.due).reduce((sum,x)=>sum+Number(x.amount),0);
+    p.total=Math.round(nextTotal*100)/100;
+    el('cardPayDetails').textContent='Vencimento: '+p.due+' · Valor registrado atualizado: '+money(p.total)+' · Pagamento: hoje';
+    updateCardStatementComparison();
+    row.remove();
+    if(!report.querySelector('.cardInvoiceRow'))tip.textContent='Compras registradas. Confira o total da fatura antes de pagar.';
+    if(!el('dashboard').hidden)await loadDashboard();
+    notify('Gasto registrado diretamente na fatura e pendência encerrada.');
+   }catch(err){notify('Não foi possível registrar a compra: '+(err.message||'erro'));button.disabled=false}
+  };
+  row.append(description,button);report.append(row);
+ }
+}
+const negativeBank=(data.bank_only||[]).filter(x=>Number(x.amount)<=0);
+if(negativeBank.length)addReportSection(report,'Estornos e créditos para revisão',negativeBank);
   addReportSection(report,'No GL Family, mas sem correspondência na fatura',data.app_only||[]);
   if(data.bank_total!=null&&Math.abs(Number(data.bank_total)-Number(data.bank_lines_sum))>0.01){
    const w=document.createElement('p');w.className='foot';w.textContent='O total das linhas extraídas não fecha com o total do banco. Pode haver tarifas, créditos ou lançamentos não lidos.';report.append(w)
@@ -1070,35 +1122,6 @@ function openCardPayment(card,due,total,count){
  el('cardPayOverlay').hidden=false;
  el('cardStatementFile').focus();
 }
-async function cardFileDataURL(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(Error('Falha ao ler arquivo'));reader.readAsDataURL(file)})}
-el('cardStatementFile').addEventListener('change',()=>{el('cardStatementAIResult').hidden=true;el('cardStatementAIResult').replaceChildren()});
-el('cardStatementAnalyze').addEventListener('click',async()=>{
- const p=activeCardPayment,file=el('cardStatementFile').files?.[0];if(!p)return;
- if(!file||!['application/pdf','image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>10485760){notify('Anexe um PDF ou imagem de até 10 MB.');return}
- const btn=el('cardStatementAnalyze'),view=el('cardStatementAIResult');
- const charges=cardCharges.filter(x=>x.card===p.card&&x.statement_due===p.due);
- if(!charges.length){notify('Sem compras cadastradas para essa fatura.');return}
- btn.disabled=true;btn.textContent='Conferindo com IA...';view.hidden=false;view.textContent='Lendo o documento e confrontando as compras. Nenhum lançamento será modificado.';
- try{
-  const fileData=await cardFileDataURL(file);
-  const {data,error}=await db.functions.invoke('analyze-card-statement',{body:{file:fileData,card:p.card,due:p.due,charges:charges.map(x=>({description:x.description,amount:Number(x.amount),purchase_date:x.purchase_date}))}});
-  if(error||data?.error)throw Error(data?.error||error.message||'Erro na análise');
-  view.replaceChildren();
-  const title=document.createElement('strong');title.textContent='Conferência assistida por IA';view.append(title);
-  const info=document.createElement('p');info.className='foot';info.textContent='Itens lidos: '+data.bank_lines_count+' · Correspondências: '+data.matched+' · Para revisar: '+data.flagged;view.append(info);
-  if(data.bank_total!=null&&Number(data.bank_total)>0){el('cardStatementTotal').value=Number(data.bank_total).toFixed(2);updateCardStatementComparison();const total=document.createElement('p');total.className='foot';total.textContent='Total da fatura lido: '+money(data.bank_total)+' · No GL Family: '+money(p.total)+'. Confirme o total no documento original.';view.append(total)}
-  if(data.bank_due&&data.bank_due!==p.due){const warning=document.createElement('p');warning.className='foot';warning.textContent='Vencimento identificado '+data.bank_due+' é diferente de '+p.due+'. Confira se anexou a fatura correta.';view.append(warning)}
-  if(!data.complete||data.warning){const warning=document.createElement('p');warning.className='foot';warning.textContent='Leitura possivelmente incompleta: '+(data.warning||'confira todas as páginas da fatura');view.append(warning)}
-  for(const [name,items] of [['No banco, não identificados no GL Family',data.bank_only],['No GL Family, não identificados no banco',data.app_only]]){
-   if(!Array.isArray(items)||!items.length)continue;
-   const heading=document.createElement('strong');heading.style.display='block';heading.style.marginTop='12px';heading.textContent=name;view.append(heading);
-   for(const item of items.slice(0,30)){const row=document.createElement('div');row.className='cardInvoiceRow';const desc=document.createElement('span');desc.textContent=item.description||'Sem descrição';const val=document.createElement('strong');val.textContent=money(Number(item.amount)||0);row.append(desc,val);view.append(row)}
-   if(items.length>30){const more=document.createElement('p');more.className='foot';more.textContent='Outros '+(items.length-30)+' itens não exibidos';view.append(more)}
-  }
-  const end=document.createElement('p');end.className='foot';end.textContent='Verifique as sugestões antes de pagar. A IA não lança diferenças nem altera compras automaticamente.';view.append(end);
- }catch(err){view.textContent='Análise indisponível: '+(err.message||'erro')+'. Faça a conferência manual.'}
- finally{btn.disabled=false;btn.textContent='Analisar fatura com IA'}
-});
 el('cardStatementTotal').addEventListener('input',updateCardStatementComparison);
 el('cardPayAmount').addEventListener('input',updateCardPayInterest);
 function closeCardPayment(){el('cardPayOverlay').hidden=true;activeCardPayment=null}
